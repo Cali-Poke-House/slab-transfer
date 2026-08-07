@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B1D26">
+<title>Slab Custody — CaliPokeHouse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --ink:#1B1D26;
+  --panel:#262A38;
+  --panel-2:#2F3446;
+  --line:#3E4459;
+  --paper:#F2F1EC;
+  --muted:#9096AB;
+  --transit:#E8563F;
+  --transit-dim:#4A2620;
+  --home:#4FB477;
+  --home-dim:#1F3A2C;
+  --warn:#E8A33F;
+  --safe-red:#E2483A;
+  --safe-blue:#3D7BE8;
+  --safe-amber:#E8A33F;
+  --safe-violet:#8A6BE8;
+  --r:14px;
+  --pad:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);
+  color:var(--paper);
+  font-family:'Atkinson Hyperlegible',system-ui,sans-serif;
+  font-size:17px;
+  line-height:1.45;
+  padding-bottom:40px;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;font-size:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:560px;margin:0 auto;padding:0 var(--pad)}
+.hide{display:none !important}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.top{
+  position:sticky;top:0;z-index:40;
+  background:rgba(27,29,38,.94);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.top-in{
+  max-width:560px;margin:0 auto;padding:12px var(--pad);
+  display:flex;align-items:center;gap:12px;
+}
+.brand{font-weight:700;letter-spacing:.14em;font-size:13px;text-transform:uppercase}
+.brand span{color:var(--muted);font-weight:400}
+.conn{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.conn.on{background:var(--home)}
+.conn.off{background:var(--transit)}
+.who{
+  margin-left:auto;display:flex;align-items:center;gap:8px;
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:999px;padding:6px 14px;font-size:14px;font-weight:700;
+}
+
+/* ============================================================
+   IDENTITY GATE
+   ============================================================ */
+.gate{padding:36px 0 24px}
+.gate h1{font-size:30px;line-height:1.15;margin:0 0 6px;font-weight:700}
+.gate p{color:var(--muted);margin:0 0 24px}
+.namegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.namebtn{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:20px 12px;font-weight:700;font-size:18px;text-align:center;
+  transition:background .12s,border-color .12s;
+}
+.namebtn:active{background:var(--panel-2);border-color:var(--paper)}
+
+/* ============================================================
+   SAFE CARD  — the signature element
+   ============================================================ */
+.cards{display:flex;flex-direction:column;gap:14px;padding-top:18px}
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-left:6px solid var(--line);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+.card.is-transit{border-color:var(--transit);background:linear-gradient(180deg,var(--transit-dim) 0%,var(--panel) 60%)}
+.card-head{padding:18px 18px 0;display:flex;align-items:flex-start;gap:12px}
+.dot{width:16px;height:16px;border-radius:50%;flex:none;margin-top:6px}
+.card-name{font-size:22px;font-weight:700;line-height:1.2}
+.card-sub{color:var(--muted);font-size:14px;margin-top:2px}
+.state{
+  margin-left:auto;text-align:right;font-size:12px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;
+}
+.state.home{color:var(--home)}
+.state.transit{color:var(--transit)}
+
+.timer{
+  padding:14px 18px 0;
+  display:flex;align-items:baseline;gap:12px;
+}
+.timer-val{font-size:38px;font-weight:700;letter-spacing:-.02em}
+.timer.t-warn .timer-val{color:var(--warn)}
+.timer.t-late .timer-val{color:var(--transit)}
+.timer-lbl{color:var(--muted);font-size:13px}
+
+.meta{padding:12px 18px 0;color:var(--muted);font-size:14px}
+.meta b{color:var(--paper)}
+
+.card.is-away{opacity:.62}
+.card.is-away .card-name{font-size:19px}
+.state.away{color:var(--muted)}
+.awaynote{
+  padding:14px 18px 18px;color:var(--muted);font-size:14px;
+  display:flex;align-items:center;gap:8px;
+}
+.awaynote button{color:var(--paper);text-decoration:underline;font-size:14px}
+.act{padding:16px 18px 18px}
+.btn{
+  display:block;width:100%;border-radius:12px;
+  padding:20px;font-size:20px;font-weight:700;
+  letter-spacing:.04em;text-align:center;
+  transition:transform .08s,filter .12s;
+}
+.btn:active{transform:scale(.985);filter:brightness(1.1)}
+.btn-send{background:var(--home);color:#0E2418}
+.btn-recv{background:var(--transit);color:#2A0D08}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--muted);font-size:15px;padding:14px}
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+.sect{margin-top:30px}
+.sect-h{
+  font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);font-weight:700;margin-bottom:10px;
+}
+.row{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 0;border-bottom:1px solid var(--line);font-size:15px;
+}
+.row-dot{width:10px;height:10px;border-radius:50%;flex:none}
+.row-main{flex:1;min-width:0}
+.row-t{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-s{color:var(--muted);font-size:13px}
+.tag{
+  font-size:12px;font-weight:700;padding:4px 9px;border-radius:6px;
+  letter-spacing:.06em;flex:none;
+}
+.tag-ok{background:var(--home-dim);color:var(--home)}
+.tag-var{background:var(--transit-dim);color:var(--transit)}
+.empty{color:var(--muted);padding:22px 0;text-align:center;font-size:15px}
+
+/* ============================================================
+   SHEET
+   ============================================================ */
+.scrim{
+  position:fixed;inset:0;z-index:60;background:rgba(10,11,16,.72);
+  display:flex;align-items:flex-end;justify-content:center;
+  animation:fade .16s ease;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{
+  width:100%;max-width:560px;
+  background:var(--ink);border:1px solid var(--line);
+  border-radius:20px 20px 0 0;
+  padding:22px var(--pad) calc(22px + env(safe-area-inset-bottom));
+  max-height:94vh;overflow-y:auto;
+  animation:up .2s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes up{from{transform:translateY(28px)}to{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){
+  .scrim,.sheet{animation:none}
+  .btn:active{transform:none}
+}
+.sheet h2{font-size:24px;margin:0 0 4px;font-weight:700;line-height:1.2}
+.sheet .lede{color:var(--muted);margin:0 0 20px;font-size:15px}
+
+.chips{display:flex;gap:10px;margin-bottom:22px}
+.chip{
+  flex:1;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:16px 10px;text-align:center;font-weight:700;
+}
+.chip.on{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+
+.countbox{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:18px;text-align:center;margin-bottom:16px;
+}
+.countbox .lbl{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.countbox .val{font-size:56px;font-weight:700;line-height:1.1;margin-top:4px}
+.countbox .val.ghost{color:var(--muted)}
+
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px}
+.key{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:18px 0;font-size:26px;font-weight:700;text-align:center;
+}
+.key:active{background:var(--panel-2)}
+.key-fn{font-size:20px;color:var(--muted)}
+
+.expect{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;margin-bottom:16px;font-size:15px;color:var(--muted);
+}
+.expect b{color:var(--paper)}
+
+.alarm{
+  background:var(--transit-dim);border:1px solid var(--transit);
+  border-radius:12px;padding:18px;margin-bottom:16px;
+}
+.alarm h3{margin:0 0 8px;font-size:19px;color:var(--transit)}
+.alarm p{margin:0;font-size:15px;line-height:1.5}
+
+.setup{padding:40px 0}
+.setup h1{font-size:26px;margin:0 0 10px}
+.setup p{color:var(--muted)}
+.setup code{
+  display:block;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:14px;margin-top:14px;
+  font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--warn);
+  white-space:pre-wrap;word-break:break-all;
+}
+:focus-visible{outline:3px solid var(--warn);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CONFIG — EDIT THIS BLOCK ONLY
+     ============================================================ -->
+<script>
+/* 1. Firebase keys — same aksvr-shipping project as the shipping board. */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBvvUK6y_FbqOR7NoR1Z5KtL4VCvo1YNoI",
+  authDomain: "aksvr-shipping.firebaseapp.com",
+  databaseURL: "https://aksvr-shipping-default-rtdb.firebaseio.com",
+  projectId: "aksvr-shipping"
+};
+
+/* 2. Where this board stores its data. Separate from the shipping board. */
+const DB_PATH = "aksvr/slab_transfer";
+
+/* 3. Everyone who can move a safe. Add or remove names freely. */
+const PEOPLE = [
+  "Hen","Winston","Pasan","Hunter","Celina","Joe",
+  "Donald","Marcus","Harrison","Kiara","Andrue","Jeff"
+];
+
+/* 4. The two locations. */
+const LOCATIONS = ["WAREHOUSE","STORE"];
+
+/* 5. The safes. Add a third here when it arrives — it appears automatically. */
+const SAFES = [
+  { id:"tt1",  name:"TT1 LIVE",       color:"var(--safe-red)",  home:"STORE"     },
+  { id:"tt3",  name:"TT3 KOI SLABS",  color:"var(--safe-blue)", home:"WAREHOUSE" }
+];
+
+/* 6. Minutes in transit before the timer turns amber, then red. */
+const WARN_MIN = 30;
+const LATE_MIN = 60;
+
+/* 7. Google Sheet mirror. Paste the Apps Script web app URL here.
+      Leave it "" and the board still works — it just won't write to the sheet. */
+const SHEET_WEBHOOK = "";
+</script>
+
+<!-- ============================================================
+     MARKUP
+     ============================================================ -->
+<header class="top hide" id="top">
+  <div class="top-in">
+    <div class="conn" id="conn" title="Connection"></div>
+    <div class="brand">Slab Custody <span>/ CaliPokeHouse</span></div>
+    <button class="who" id="locBtn"></button>
+    <button class="who" id="whoBtn"></button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- Setup notice -->
+  <section class="setup hide" id="setup">
+    <h1>One thing left before this works.</h1>
+    <p>The Firebase keys aren't filled in yet. Open this file in a text editor, find the CONFIG block near the top, and paste the <b>firebaseConfig</b> object from your AKSVR shipping board.</p>
+    <code>const FIREBASE_CONFIG = {
+  apiKey: "PASTE_HERE",
+  ...
+};</code>
+  </section>
+
+  <!-- Identity gate -->
+  <section class="gate hide" id="gate">
+    <h1>Who's using this?</h1>
+    <p>Your name goes on every move you log. Tap once — the board remembers you on this phone.</p>
+    <div class="namegrid" id="namegrid"></div>
+  </section>
+
+  <!-- Location gate -->
+  <section class="gate hide" id="locgate">
+    <h1>Where are you right now?</h1>
+    <p>The board only offers you the safes that are actually in the building with you. You can switch any time from the top bar.</p>
+    <div class="namegrid" id="locgrid"></div>
+  </section>
+
+  <!-- Board -->
+  <section class="hide" id="board">
+    <div class="cards" id="cards"></div>
+    <div class="sect">
+      <div class="sect-h">Recent moves</div>
+      <div id="history"></div>
+    </div>
+  </section>
+
+</main>
+
+<div id="sheetHost"></div>
+
+<!-- ============================================================
+     LOGIC
+     ============================================================ -->
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- tiny helpers ---------- */
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, html) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (html !== undefined) n.innerHTML = html;
+    return n;
+  };
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+  const store = {
+    get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+    set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+  };
+
+  function clock(ms){
+    const s = Math.max(0, Math.floor(ms/1000));
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), x = s%60;
+    const pad = n => String(n).padStart(2,"0");
+    return h > 0 ? h + ":" + pad(m) + ":" + pad(x) : pad(m) + ":" + pad(x);
+  }
+  function timeOf(ts){
+    return new Date(ts).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" });
+  }
+  function dayOf(ts){
+    const d = new Date(ts), now = new Date();
+    if (d.toDateString() === now.toDateString()) return "Today";
+    return d.toLocaleDateString([], { month:"short", day:"numeric" });
+  }
+  const other = loc => LOCATIONS.find(l => l !== loc) || LOCATIONS[0];
+  const safeDef = id => SAFES.find(s => s.id === id) || { name:id, color:"var(--muted)" };
+
+  /* ---------- state ---------- */
+  let db = null;
+  let me = store.get("slab_user") || "";
+  let myLoc = store.get("slab_loc") || "";
+  let safes = {};
+  let transfers = {};
+
+  /* ---------- google sheet mirror ---------- */
+  function sheetSend(body){
+    return fetch(SHEET_WEBHOOK, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: body
+    });
+  }
+  function queueGet(){
+    try { return JSON.parse(store.get("slab_queue") || "[]"); } catch(e){ return []; }
+  }
+  function queuePut(arr){ store.set("slab_queue", JSON.stringify(arr.slice(-50))); }
+
+  function postSheet(payload){
+    if (!SHEET_WEBHOOK) return;
+    const body = JSON.stringify(payload);
+    sheetSend(body).catch(function(){
+      const q = queueGet(); q.push(body); queuePut(q);
+    });
+  }
+  function flushQueue(){
+    if (!SHEET_WEBHOOK) return;
+    const q = queueGet();
+    if (!q.length) return;
+    queuePut([]);
+    q.forEach(function(body){
+      sheetSend(body).catch(function(){
+        const r = queueGet(); r.push(body); queuePut(r);
+      });
+    });
+  }
+  window.addEventListener("online", flushQueue);
+
+  /* ---------- boot ---------- */
+  if (String(FIREBASE_CONFIG.apiKey).indexOf("PASTE") === 0) {
+    $("setup").classList.remove("hide");
+    return;
+  }
+
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.database();
+
+  firebase.database().ref(".info/connected").on("value", s => {
+    const c = $("conn");
+    c.className = "conn " + (s.val() ? "on" : "off");
+    c.title = s.val() ? "Connected" : "Offline — moves will send when you're back";
+  });
+
+  db.ref(DB_PATH + "/safes").on("value", s => { safes = s.val() || {}; seed(); render(); });
+  db.ref(DB_PATH + "/transfers").limitToLast(60).on("value", s => { transfers = s.val() || {}; render(); });
+
+  function seed(){
+    SAFES.forEach(d => {
+      if (!safes[d.id]) {
+        db.ref(DB_PATH + "/safes/" + d.id).set({
+          name: d.name, location: d.home, status: "home", count: 0
+        });
+      }
+    });
+  }
+
+  /* ---------- identity ---------- */
+  function hideAll(){
+    $("gate").classList.add("hide");
+    $("locgate").classList.add("hide");
+    $("board").classList.add("hide");
+    $("top").classList.add("hide");
+  }
+  function showGate(){
+    hideAll();
+    $("gate").classList.remove("hide");
+    const g = $("namegrid");
+    g.innerHTML = "";
+    PEOPLE.forEach(n => {
+      const b = el("button","namebtn", esc(n));
+      b.onclick = () => { me = n; store.set("slab_user", n); route(); };
+      g.appendChild(b);
+    });
+  }
+  function showLocGate(){
+    hideAll();
+    $("locgate").classList.remove("hide");
+    const g = $("locgrid");
+    g.innerHTML = "";
+    LOCATIONS.forEach(L => {
+      const b = el("button","namebtn", esc(L));
+      b.onclick = () => { myLoc = L; store.set("slab_loc", L); route(); };
+      g.appendChild(b);
+    });
+  }
+  function start(){
+    hideAll();
+    $("board").classList.remove("hide");
+    $("top").classList.remove("hide");
+    $("whoBtn").textContent = me;
+    $("locBtn").textContent = myLoc;
+    renderCards();
+    renderHistory();
+  }
+  function route(){
+    if (!me) { showGate(); return; }
+    if (!myLoc) { showLocGate(); return; }
+    start();
+  }
+  $("whoBtn").onclick = () => { me = ""; store.set("slab_user",""); route(); };
+  $("locBtn").onclick = () => { myLoc = ""; store.set("slab_loc",""); route(); };
+
+  /* ---------- render ---------- */
+  function render(){
+    if (!me || !myLoc) { route(); return; }
+    if ($("board").classList.contains("hide")) { start(); return; }
+    renderCards();
+    renderHistory();
+  }
+
+  function renderCards(){
+    const host = $("cards");
+    host.innerHTML = "";
+    SAFES.forEach(def => {
+      const s = safes[def.id];
+      if (!s) return;
+      const inTransit = s.status === "transit";
+      const t = inTransit && s.transferId ? transfers[s.transferId] : null;
+
+      /* is this safe my business right now? */
+      const comingHere = inTransit && t && t.to === myLoc;
+      const sittingHere = !inTransit && s.location === myLoc;
+      const mine = comingHere || sittingHere;
+
+      const card = el("div","card" +
+        (inTransit && comingHere ? " is-transit" : "") +
+        (mine ? "" : " is-away"));
+      card.style.borderLeftColor = def.color;
+
+      /* head */
+      const head = el("div","card-head");
+      const dot = el("div","dot"); dot.style.background = def.color;
+      const nameWrap = el("div");
+      nameWrap.appendChild(el("div","card-name", esc(s.name || def.name)));
+      nameWrap.appendChild(el("div","card-sub",
+        inTransit && t ? "Heading to " + esc(t.to) : "Sitting at " + esc(s.location)));
+      const state = el("div","state " +
+        (mine ? (inTransit ? "transit" : "home") : "away"),
+        inTransit ? "In transit" : "Secured");
+      head.appendChild(dot); head.appendChild(nameWrap); head.appendChild(state);
+      card.appendChild(head);
+
+      if (inTransit && t) {
+        const tm = el("div","timer");
+        tm.dataset.since = t.sentAt;
+        tm.innerHTML = '<div class="timer-val mono">--:--</div><div class="timer-lbl">on the road</div>';
+        card.appendChild(tm);
+        card.appendChild(el("div","meta",
+          "<b>" + esc(t.sentBy) + "</b> sent " + esc(String(t.countOut)) +
+          " slabs from " + esc(t.from) + " at " + timeOf(t.sentAt)));
+
+        if (comingHere) {
+          const act = el("div","act");
+          const b = el("button","btn btn-recv","RECEIVE");
+          b.onclick = () => openReceive(def.id);
+          act.appendChild(b);
+          const cx = el("button","btn btn-ghost","Sent by mistake? Cancel this move");
+          cx.style.marginTop = "10px";
+          cx.onclick = () => cancelMove(def.id);
+          act.appendChild(cx);
+          card.appendChild(act);
+        } else {
+          card.appendChild(awayNote("Arriving at " + t.to + ", not here."));
+        }
+      } else {
+        card.appendChild(el("div","meta",
+          "Last count: <b>" + esc(String(s.count || 0)) + "</b> slabs"));
+        if (sittingHere) {
+          const act = el("div","act");
+          const b = el("button","btn btn-send","SEND TO " + other(s.location));
+          b.onclick = () => openSend(def.id);
+          act.appendChild(b);
+          card.appendChild(act);
+        } else {
+          card.appendChild(awayNote("Locked up at " + s.location + "."));
+        }
+      }
+      host.appendChild(card);
+    });
+    tick();
+  }
+
+  function awayNote(text){
+    const n = el("div","awaynote");
+    n.appendChild(el("span","", esc(text)));
+    const b = el("button","","Switch location");
+    b.onclick = () => { myLoc = ""; store.set("slab_loc",""); route(); };
+    n.appendChild(b);
+    return n;
+  }
+
+  function renderHistory(){
+    const host = $("history");
+    const list = Object.keys(transfers)
+      .map(k => Object.assign({ key:k }, transfers[k]))
+      .filter(t => t.status === "done")
+      .sort((a,b) => b.receivedAt - a.receivedAt)
+      .slice(0,15);
+
+    host.innerHTML = "";
+    if (!list.length) {
+      host.appendChild(el("div","empty","No completed moves yet. The first one you log shows up here."));
+      return;
+    }
+    list.forEach(t => {
+      const def = safeDef(t.safe);
+      const row = el("div","row");
+      const d = el("div","row-dot"); d.style.background = def.color;
+      const main = el("div","row-main");
+      main.appendChild(el("div","row-t", esc(def.name) + " · " + esc(t.from) + " → " + esc(t.to)));
+      main.appendChild(el("div","row-s",
+        dayOf(t.receivedAt) + " " + timeOf(t.receivedAt) + " · " +
+        esc(t.sentBy) + " → " + esc(t.receivedBy)));
+      const v = Number(t.variance || 0);
+      const tag = v === 0
+        ? el("div","tag tag-ok", t.countIn + " ok")
+        : el("div","tag tag-var", (v > 0 ? "+" : "") + v);
+      row.appendChild(d); row.appendChild(main); row.appendChild(tag);
+      host.appendChild(row);
+    });
+  }
+
+  /* live timers */
+  function tick(){
+    document.querySelectorAll(".timer").forEach(t => {
+      const since = Number(t.dataset.since);
+      if (!since) return;
+      const ms = Date.now() - since;
+      t.querySelector(".timer-val").textContent = clock(ms);
+      const mins = ms / 60000;
+      t.classList.toggle("t-warn", mins >= WARN_MIN && mins < LATE_MIN);
+      t.classList.toggle("t-late", mins >= LATE_MIN);
+    });
+  }
+  setInterval(tick, 1000);
+
+  /* ---------- sheet plumbing ---------- */
+  function closeSheet(){ $("sheetHost").innerHTML = ""; }
+  function openSheet(build){
+    const scrim = el("div","scrim");
+    const sheet = el("div","sheet");
+    scrim.onclick = e => { if (e.target === scrim) closeSheet(); };
+    build(sheet);
+    scrim.appendChild(sheet);
+    $("sheetHost").innerHTML = "";
+    $("sheetHost").appendChild(scrim);
+  }
+
+  /* number pad bound to a value box */
+  function numpad(sheet, initial, onChange){
+    let val = initial === null ? "" : String(initial);
+    const box = el("div","countbox");
+    box.innerHTML = '<div class="lbl">Slab count</div><div class="val ghost">0</div>';
+    const out = box.querySelector(".val");
+    const paint = () => {
+      out.textContent = val === "" ? "0" : val;
+      out.classList.toggle("ghost", val === "");
+      onChange(val === "" ? null : parseInt(val,10));
+    };
+    sheet.appendChild(box);
+
+    const pad = el("div","pad");
+    ["1","2","3","4","5","6","7","8","9","C","0","⌫"].forEach(k => {
+      const b = el("button","key" + (k === "C" || k === "⌫" ? " key-fn" : ""), k);
+      b.onclick = () => {
+        if (k === "C") val = "";
+        else if (k === "⌫") val = val.slice(0,-1);
+        else if (val.length < 4) val = (val === "" ? "" : val) + k;
+        paint();
+      };
+      pad.appendChild(b);
+    });
+    sheet.appendChild(pad);
+    paint();
+  }
+
+  /* ---------- SEND ---------- */
+  function openSend(safeId){
+    const s = safes[safeId], def = safeDef(safeId);
+    let dest = other(s.location);
+    let count = null;
+
+    openSheet(sheet => {
+      sheet.appendChild(el("h2","", "Send " + esc(def.name)));
+      sheet.appendChild(el("p","lede", "Count the slabs, then confirm. The safe travels locked."));
+
+      sheet.appendChild(el("div","sect-h","Going to"));
+      const chips = el("div","chips");
+      LOCATIONS.forEach(L => {
+        const c = el("button","chip" + (L === dest ? " on" : ""), esc(L));
+        c.onclick = () => {
+          dest = L;
+          chips.querySelectorAll(".chip").forEach(x => x.classList.remove("on"));
+          c.classList.add("on");
+        };
+        chips.appendChild(c);
+      });
+      sheet.appendChild(chips);
+
+      const go = el("button","btn btn-send","CONFIRM SEND");
+      numpad(sheet, s.count || null, v => {
+        count = v;
+        go.disabled = (v === null);
+        go.style.opacity = v === null ? .4 : 1;
+      });
+
+      go.onclick = () => {
+        if (count === null) return;
+        const ref = db.ref(DB_PATH + "/transfers").push();
+        const now = Date.now();
+        ref.set({
+          safe: safeId, from: s.location, to: dest,
+          sentBy: me, sentAt: now, countOut: count, status: "transit"
+        });
+        db.ref(DB_PATH + "/safes/" + safeId).update({
+          status: "transit", transferId: ref.key, count: count
+        });
+        postSheet({
+          key: ref.key, event: "sent", safe: def.name,
+          from: s.location, to: dest, sentBy: me,
+          sentAt: new Date(now).toISOString(), countOut: count
+        });
+        closeSheet();
+      };
+      sheet.appendChild(go);
+
+      const cancel = el("button","btn btn-ghost","Back");
+      cancel.style.marginTop = "10px";
+      cancel.onclick = closeSheet;
+      sheet.appendChild(cancel);
+    });
+  }
+
+  /* ---------- RECEIVE ---------- */
+  function openReceive(safeId){
+    const s = safes[safeId], def = safeDef(safeId);
+    const t = transfers[s.transferId];
+    if (!t) return;
+    let count = null;
+
+    openSheet(sheet => {
+      sheet.appendChild(el("h2","", "Receive " + esc(def.name)));
+      sheet.appendChild(el("p","lede","Bring the safe inside first. Then unlock and count."));
+
+      sheet.appendChild(el("div","expect",
+        "<b>" + esc(t.sentBy) + "</b> sent <b>" + esc(String(t.countOut)) +
+        "</b> slabs from " + esc(t.from) + " at " + timeOf(t.sentAt) + "."));
+
+      const go = el("button","btn btn-recv","CONFIRM RECEIVE");
+      numpad(sheet, null, v => {
+        count = v;
+        go.disabled = (v === null);
+        go.style.opacity = v === null ? .4 : 1;
+      });
+
+      go.onclick = () => {
+        if (count === null) return;
+        const variance = count - Number(t.countOut);
+        if (variance !== 0) { confirmVariance(safeId, t, count, variance); return; }
+        commitReceive(safeId, t, count, 0);
+      };
+      sheet.appendChild(go);
+
+      const cancel = el("button","btn btn-ghost","Back");
+      cancel.style.marginTop = "10px";
+      cancel.onclick = closeSheet;
+      sheet.appendChild(cancel);
+    });
+  }
+
+  function confirmVariance(safeId, t, count, variance){
+    openSheet(sheet => {
+      sheet.appendChild(el("h2","","Counts don't match."));
+      const box = el("div","alarm");
+      box.innerHTML =
+        "<h3>" + (variance > 0 ? "+" + variance + " extra" : variance + " missing") + "</h3>" +
+        "<p>Sent " + esc(String(t.countOut)) + ", received " + count +
+        ". Stop moving slabs and recount with a second person. If it still doesn't match, " +
+        "tell Hen and Winston this shift — not tomorrow.</p>";
+      sheet.appendChild(box);
+
+      const again = el("button","btn btn-ghost","Go back and recount");
+      again.onclick = () => openReceive(safeId);
+      sheet.appendChild(again);
+
+      const log = el("button","btn btn-recv","I recounted — log the mismatch");
+      log.style.marginTop = "10px";
+      log.onclick = () => commitReceive(safeId, t, count, variance);
+      sheet.appendChild(log);
+    });
+  }
+
+  function commitReceive(safeId, t, count, variance){
+    const now = Date.now();
+    const key = safes[safeId].transferId;
+    db.ref(DB_PATH + "/transfers/" + key).update({
+      receivedBy: me, receivedAt: now, countIn: count,
+      variance: variance, status: "done"
+    });
+    db.ref(DB_PATH + "/safes/" + safeId).update({
+      status: "home", location: t.to, count: count, transferId: null
+    });
+    postSheet({
+      key: key, event: "received", safe: safeDef(safeId).name,
+      from: t.from, to: t.to, sentBy: t.sentBy, receivedBy: me,
+      sentAt: new Date(t.sentAt).toISOString(),
+      receivedAt: new Date(now).toISOString(),
+      countOut: t.countOut, countIn: count, variance: variance,
+      minutes: Math.round((now - t.sentAt) / 60000)
+    });
+    closeSheet();
+  }
+
+  /* ---------- CANCEL ---------- */
+  function cancelMove(safeId){
+    const s = safes[safeId], def = safeDef(safeId);
+    const t = transfers[s.transferId];
+    if (!t) return;
+    openSheet(sheet => {
+      sheet.appendChild(el("h2","","Cancel this move?"));
+      sheet.appendChild(el("p","lede",
+        "Use this only if the safe never actually left. " + esc(def.name) +
+        " goes back to " + esc(t.from) + " and the move is voided in the log."));
+      const yes = el("button","btn btn-recv","Yes, the safe never left");
+      yes.onclick = () => {
+        db.ref(DB_PATH + "/transfers/" + s.transferId).update({
+          status: "void", voidedBy: me, voidedAt: Date.now()
+        });
+        db.ref(DB_PATH + "/safes/" + safeId).update({
+          status: "home", location: t.from, transferId: null
+        });
+        postSheet({
+          key: s.transferId, event: "void", safe: def.name, voidedBy: me,
+          voidedAt: new Date().toISOString()
+        });
+        closeSheet();
+      };
+      sheet.appendChild(yes);
+      const no = el("button","btn btn-ghost","Keep the move");
+      no.style.marginTop = "10px";
+      no.onclick = closeSheet;
+      sheet.appendChild(no);
+    });
+  }
+
+  /* ---------- go ---------- */
+  flushQueue();
+  route();
+})();
+</script>
+</body>
+</html>
