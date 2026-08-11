@@ -1,0 +1,2841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1015">
+<title>Slab Custody — CaliPokeHouse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Saira+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --ink:#080A0F;
+  --plate:#11151E;
+  --plate-2:#19202C;
+  --plate-3:#222B3A;
+  --etch:rgba(255,255,255,.06);
+  --etch-2:rgba(255,255,255,.13);
+  --bone:#E9E7E1;
+  --dim:#78849A;
+  --signal:#FFB020;
+  --signal-ink:#241700;
+  --signal-bg:rgba(255,176,32,.12);
+  --secure:#3FD8DE;
+  --secure-ink:#00272A;
+  --secure-bg:rgba(63,216,222,.11);
+  --alarm:#FF5236;
+  --alarm-ink:#2B0800;
+  --alarm-bg:rgba(255,82,54,.12);
+  --pad:18px;
+  --go:#3FD8DE;
+  --go-ink:#00272A;
+  --go-bg:rgba(63,216,222,.11);
+  --alert:#FF5236;
+  --alert-ink:#2B0800;
+  --alert-bg:rgba(255,82,54,.12);
+  --warn:#FFB020;
+  --warn-bg:rgba(255,176,32,.12);
+  --card:#11151E;
+  --card-2:#19202C;
+  --line:rgba(255,255,255,.06);
+  --line-2:rgba(255,255,255,.13);
+  --txt:#E9E7E1;
+  --bg:#080A0F;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);
+  background-image:
+    radial-gradient(circle at 12% -8%, rgba(63,216,222,.055), transparent 46%),
+    radial-gradient(circle at 92% 4%, rgba(255,176,32,.05), transparent 42%);
+  background-attachment:fixed;
+  color:var(--bone);
+  font-family:'Atkinson Hyperlegible',system-ui,sans-serif;
+  font-size:17px;line-height:1.45;padding-bottom:64px;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;font-size:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea{font-family:inherit;font-size:inherit;color:inherit}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:560px;margin:0 auto;padding:0 var(--pad)}
+.hide{display:none !important}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px}
+
+/* the machined label voice — used only for small stamped text */
+.stencil{
+  font-family:'Saira Condensed','Atkinson Hyperlegible',sans-serif;
+  font-weight:700;text-transform:uppercase;letter-spacing:.13em;
+}
+
+/* ---------- header: a machined plate edge ---------- */
+.top{
+  position:sticky;top:0;z-index:40;
+  background:rgba(8,10,15,.93);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--etch);
+  box-shadow:0 1px 0 rgba(255,255,255,.03) inset;
+}
+.top-in{max-width:560px;margin:0 auto;padding:13px var(--pad);display:flex;align-items:center;gap:11px}
+.conn{width:8px;height:8px;border-radius:2px;background:var(--dim);flex:none;transform:rotate(45deg)}
+.conn.on{background:var(--secure);box-shadow:0 0 9px rgba(63,216,222,.7)}
+.conn.off{background:var(--alarm);box-shadow:0 0 9px rgba(255,82,54,.7)}
+.brand{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  letter-spacing:.22em;font-size:12px;text-transform:uppercase;color:var(--dim);
+}
+.chipbar{margin-left:auto;display:flex;gap:6px;align-items:center}
+.chip-h{
+  background:var(--plate);border:1px solid var(--etch);border-radius:6px;
+  padding:7px 11px;font-size:12px;
+  font-family:'Saira Condensed',sans-serif;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.chip-h:active{background:var(--plate-2)}
+.gear{background:var(--plate);border:1px solid var(--etch);border-radius:6px;padding:7px 10px;font-size:14px;line-height:1}
+
+/* ---------- gates ---------- */
+.gate{padding:46px 0 24px}
+.gate h1{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:40px;line-height:1.02;margin:0 0 10px;
+  letter-spacing:-.005em;text-transform:uppercase;
+}
+.gate p{color:var(--dim);margin:0 0 26px;font-size:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pick{
+  background:var(--plate);border:1px solid var(--etch);border-radius:8px;
+  padding:22px 12px;font-weight:700;font-size:18px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.pick::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--etch-2);
+}
+.pick:active{background:var(--plate-2);border-color:var(--etch-2)}
+.pick:active::before{background:var(--signal)}
+
+.pick-tag{
+  font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:10px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--signal);margin-top:5px;
+}
+.bldg{margin-top:22px}
+.bldg .sh{margin-bottom:9px}
+
+/* ---------- banner: a warning tag ---------- */
+.banner{
+  display:flex;align-items:stretch;gap:0;
+  background:var(--alarm-bg);border:1px solid rgba(255,82,54,.34);
+  border-radius:8px;margin-top:16px;overflow:hidden;
+}
+.banner::before{
+  content:"";width:10px;flex:none;
+  background:repeating-linear-gradient(135deg,var(--alarm) 0 5px,transparent 5px 10px);
+  opacity:.75;
+}
+.banner div{font-size:14px;line-height:1.42;padding:13px 15px}
+.banner b{color:var(--alarm)}
+.banner.warn{background:var(--signal-bg);border-color:rgba(255,176,32,.34)}
+.banner.warn::before{background:repeating-linear-gradient(135deg,var(--signal) 0 5px,transparent 5px 10px)}
+.banner.warn b{color:var(--signal)}
+
+/* ---------- next up: the board tells you what to do ---------- */
+.nextbox{
+  background:var(--plate);border:1px solid var(--etch-2);
+  border-top:3px solid var(--signal);border-radius:0 0 8px 8px;
+  padding:17px 18px 18px;margin-top:18px;
+}
+.nx-l{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--signal);
+}
+.nx-w{color:var(--bone);font-size:16px;line-height:1.4;margin-top:7px}
+.nextbox .btn{margin-top:15px}
+.allclear{
+  background:var(--plate);border:1px solid var(--etch);border-radius:8px;
+  padding:17px 18px;margin-top:18px;
+}
+.ac-l{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:18px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);
+}
+.ac-d{color:var(--dim);font-size:14px;margin-top:6px;line-height:1.45}
+
+/* ---------- readouts ---------- */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-top:18px}
+.stat{
+  background:var(--plate);border:1px solid var(--etch);border-radius:8px;
+  padding:13px 12px;position:relative;
+}
+.stat .n{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:30px;line-height:1;letter-spacing:.01em;
+  font-variant-numeric:tabular-nums;
+}
+.stat .l{
+  font-family:'Saira Condensed',sans-serif;font-weight:600;
+  font-size:10px;color:var(--dim);letter-spacing:.15em;
+  text-transform:uppercase;margin-top:5px;
+}
+.stat.bad .n{color:var(--alarm)}
+.stat.warn .n{color:var(--signal)}
+
+/* ---------- safe cards: tags bolted to a plate ---------- */
+.cards{display:flex;flex-direction:column;gap:11px;padding-top:14px}
+.card{
+  background:var(--plate);border:1px solid var(--etch);border-radius:8px;
+  overflow:hidden;display:flex;width:100%;text-align:left;position:relative;
+}
+.card::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  box-shadow:0 1px 0 rgba(255,255,255,.035) inset;border-radius:8px;
+}
+.rail{width:11px;flex:none;opacity:.85}
+.body{flex:1;min-width:0;padding:17px 18px;position:relative}
+.card.hot{background:var(--plate-2);border-color:rgba(255,82,54,.32)}
+.card.dim{opacity:.46}
+
+.chead{display:flex;align-items:flex-start;gap:10px}
+.cname{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:25px;line-height:1.05;letter-spacing:.005em;text-transform:uppercase;
+}
+.csub{color:var(--dim);font-size:13.5px;margin-top:3px}
+.pill{
+  margin-left:auto;font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  padding:6px 9px;border-radius:4px;white-space:nowrap;flex:none;
+  border:1px solid transparent;
+}
+.pill.ok{background:var(--secure-bg);color:var(--secure);border-color:rgba(63,216,222,.35)}
+.pill.hot{background:var(--alarm-bg);color:var(--alarm);border-color:rgba(255,82,54,.4)}
+.pill.warn{background:var(--signal-bg);color:var(--signal);border-color:rgba(255,176,32,.38)}
+.pill.off{background:rgba(255,255,255,.04);color:var(--dim);border-color:var(--etch)}
+
+.timer{display:flex;align-items:baseline;gap:11px;margin-top:15px}
+.tv{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:46px;line-height:1;letter-spacing:.02em;font-variant-numeric:tabular-nums;
+}
+.timer.w .tv{color:var(--signal)}
+.timer.l .tv{color:var(--alarm)}
+.tl{
+  font-family:'Saira Condensed',sans-serif;font-weight:600;color:var(--dim);
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+}
+
+.meta{margin-top:11px;color:var(--dim);font-size:14px}
+.meta b{color:var(--bone)}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:block;width:100%;border-radius:8px;padding:19px;
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:20px;letter-spacing:.09em;text-transform:uppercase;
+  text-align:center;margin-top:14px;transition:transform .07s;
+}
+.btn:active{transform:scale(.987)}
+.btn-go{background:var(--secure);color:var(--secure-ink)}
+.btn-hot{background:var(--alarm);color:var(--alarm-ink)}
+.btn-warn{background:var(--signal);color:var(--signal-ink)}
+.btn-q{
+  background:transparent;border:1px solid var(--etch-2);color:var(--dim);
+  font-size:14px;letter-spacing:.07em;padding:13px;margin-top:8px;
+}
+.awaynote{margin-top:14px;color:var(--dim);font-size:14px}
+.awaynote button{color:var(--bone);text-decoration:underline}
+
+/* ---------- detail: the safe's own tag ---------- */
+.detail{padding-top:18px}
+.back{
+  color:var(--dim);font-size:12px;padding:7px 0;display:inline-block;
+  font-family:'Saira Condensed',sans-serif;font-weight:600;
+  letter-spacing:.13em;text-transform:uppercase;
+}
+.dhead{display:flex;align-items:stretch;gap:13px;margin-top:4px}
+.dbar{width:11px;border-radius:3px;flex:none;min-height:60px;opacity:.9}
+.dtitle{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:38px;line-height:.98;letter-spacing:.005em;text-transform:uppercase;
+}
+.dsub{color:var(--dim);font-size:14px;margin-top:5px}
+
+/* the signature: a stamped status slab */
+.readout{
+  position:relative;overflow:hidden;
+  background:var(--plate);border:1px solid var(--etch);border-radius:8px;
+  padding:22px;margin-top:16px;
+}
+.readout::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:3px;
+  background:repeating-linear-gradient(90deg,var(--etch-2) 0 8px,transparent 8px 16px);
+}
+.rnum{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:74px;line-height:.86;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;
+}
+.rlbl{
+  font-family:'Saira Condensed',sans-serif;font-weight:600;
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--dim);margin-top:8px;
+}
+.rmeta{color:var(--dim);font-size:13px;margin-top:9px;line-height:1.5}
+.stamp{
+  position:absolute;right:-8px;top:50%;transform:translateY(-50%) rotate(-9deg);
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:27px;letter-spacing:.06em;text-transform:uppercase;
+  border:3px solid currentColor;border-radius:5px;
+  padding:7px 13px;opacity:.26;pointer-events:none;white-space:nowrap;
+  max-width:52%;
+}
+.stamp.ok{color:var(--secure)}
+.stamp.hot{color:var(--alarm);opacity:.34}
+.stamp.warn{color:var(--signal);opacity:.3}
+.stamp.off{color:var(--dim)}
+
+/* ---------- manifest: a ruled ledger ---------- */
+.certs{margin-top:22px}
+.manifest{border-top:1px solid var(--etch-2)}
+.crow{
+  display:flex;align-items:center;gap:12px;padding:11px 4px;
+  border-bottom:1px solid var(--etch);font-size:15px;
+}
+.crow:nth-child(even){background:rgba(255,255,255,.014)}
+.cidx{
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);
+  flex:none;width:26px;text-align:right;font-variant-numeric:tabular-nums;
+}
+.crow .cc{
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15.5px;
+  white-space:nowrap;letter-spacing:.02em;
+}
+.crow .cn{color:var(--dim);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crow .cm{flex:1;min-width:0}
+.crow .cwhen{
+  font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:11px;
+  color:var(--dim);letter-spacing:.1em;text-transform:uppercase;flex:none;
+}
+.searchbar{
+  width:100%;background:var(--plate);border:1px solid var(--etch);border-radius:7px;
+  padding:13px 15px;margin-bottom:10px;
+}
+
+/* ---------- container code: the callable number ---------- */
+.ccode{
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;
+  letter-spacing:.16em;color:var(--signal);margin-bottom:3px;
+}
+
+/* ---------- find a card ---------- */
+.findcard{
+  background:var(--plate);border:1px solid var(--etch);
+  border-left:4px solid var(--etch-2);border-radius:0 8px 8px 0;
+  padding:20px;margin-top:16px;
+}
+.findcard.f-in{border-left-color:var(--secure)}
+.findcard.f-gone{border-left-color:var(--dim)}
+.findcard.f-bad{border-left-color:var(--alarm)}
+.findcard.f-none{border-left-color:var(--signal)}
+.f-l{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+}
+.findcard.f-in .f-l{color:var(--secure)}
+.findcard.f-bad .f-l{color:var(--alarm)}
+.findcard.f-none .f-l{color:var(--signal)}
+.f-where{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:30px;line-height:1.05;text-transform:uppercase;
+  letter-spacing:.01em;margin-top:6px;
+}
+.f-sub{color:var(--bone);font-size:15px;margin-top:5px;line-height:1.4}
+.f-meta{color:var(--dim);font-size:13.5px;margin-top:6px;line-height:1.45}
+.findcard .btn{margin-top:16px}
+a.btn{text-decoration:none;display:block}
+
+/* label code on the printed tag */
+.qrcard .qcode{
+  font-family:'JetBrains Mono',monospace;font-weight:700;
+  font-size:22px;letter-spacing:.1em;color:#0A0C11;margin-top:12px;
+}
+
+/* ---------- raw lot count-back ---------- */
+.lotrow{
+  display:flex;align-items:center;gap:12px;
+  background:var(--plate);border:1px solid var(--etch);border-radius:7px;
+  padding:13px 14px;margin-bottom:6px;
+}
+.lot-m{flex:1;min-width:0}
+.lot-n{font-weight:700;font-size:15px}
+.lot-s{color:var(--dim);font-size:12.5px;margin-top:2px}
+.lot-q{
+  width:78px;flex:none;background:var(--ink);border:1px solid var(--etch-2);
+  border-radius:6px;padding:12px 8px;text-align:center;
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--secure);
+}
+.lot-q:focus{border-color:var(--secure);outline:none}
+.lot-q.short{color:var(--signal);border-color:rgba(255,176,32,.55)}
+a.cc.link{color:var(--secure);text-decoration:none;border-bottom:1px dotted rgba(63,216,222,.45)}
+
+/* ---------- log ---------- */
+.sect{margin-top:34px}
+.sh{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:11px;
+  padding-bottom:7px;border-bottom:1px solid var(--etch-2);
+}
+.row{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--etch);font-size:15px}
+.rd{width:8px;height:8px;border-radius:2px;flex:none;transform:rotate(45deg)}
+.rm{flex:1;min-width:0}
+.rt{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.rs{color:var(--dim);font-size:12.5px}
+.tag{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  padding:5px 8px;border-radius:4px;flex:none;border:1px solid transparent;
+}
+.tag.ok{background:var(--secure-bg);color:var(--secure);border-color:rgba(63,216,222,.3)}
+.tag.bad{background:var(--alarm-bg);color:var(--alarm);border-color:rgba(255,82,54,.35)}
+.tag.warn{background:var(--signal-bg);color:var(--signal);border-color:rgba(255,176,32,.32)}
+.tag.void{background:rgba(255,255,255,.04);color:var(--dim);border-color:var(--etch)}
+.empty{color:var(--dim);padding:26px 0;text-align:center;font-size:15px}
+
+/* ---------- sheets ---------- */
+.scrim{position:fixed;inset:0;z-index:60;background:rgba(3,4,7,.8);display:flex;align-items:flex-end;justify-content:center;animation:f .15s ease}
+@keyframes f{from{opacity:0}to{opacity:1}}
+.sheet{
+  width:100%;max-width:560px;background:var(--ink);
+  border:1px solid var(--etch-2);border-bottom:0;border-radius:12px 12px 0 0;
+  padding:0 var(--pad) calc(24px + env(safe-area-inset-bottom));
+  max-height:94vh;overflow-y:auto;animation:u .22s cubic-bezier(.2,.8,.3,1);
+  position:relative;
+}
+.sheet::before{
+  content:"";position:sticky;display:block;top:0;height:5px;margin:0 calc(var(--pad) * -1) 22px;
+  background:repeating-linear-gradient(90deg,var(--signal) 0 9px,transparent 9px 18px);
+  opacity:.5;
+}
+@keyframes u{from{transform:translateY(30px)}to{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.scrim,.sheet{animation:none}.btn:active{transform:none}}
+.sheet h2{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:32px;margin:0 0 6px;letter-spacing:.004em;
+  line-height:1.02;text-transform:uppercase;
+}
+.lede{color:var(--dim);margin:0 0 20px;font-size:15px}
+
+.chips{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.chip{
+  flex:1;min-width:88px;background:var(--plate);border:1px solid var(--etch);
+  border-radius:7px;padding:16px 10px;text-align:center;
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:16px;letter-spacing:.06em;text-transform:uppercase;
+}
+.chip.on{background:var(--bone);color:var(--ink);border-color:var(--bone)}
+
+/* ---------- scan field: the instrument ---------- */
+.scanwrap{
+  background:var(--plate);border:1px solid var(--etch);border-radius:8px;
+  padding:16px;margin-bottom:13px;position:relative;overflow:hidden;
+}
+.scanwrap .l{
+  font-family:'Saira Condensed',sans-serif;font-weight:600;
+  font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:11px;
+}
+.scaninput{
+  width:100%;background:var(--ink);border:1px solid var(--etch-2);
+  border-radius:7px;padding:18px 16px;
+  font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;
+  letter-spacing:.06em;color:var(--secure);
+}
+.scaninput:focus{border-color:var(--secure);outline:none;box-shadow:0 0 0 3px rgba(63,216,222,.13)}
+.scaninput::placeholder{color:var(--dim);font-weight:400;letter-spacing:0;font-size:16px}
+.scanhint{color:var(--dim);font-size:12.5px;margin-top:9px;line-height:1.45}
+
+/* ---------- tallies ---------- */
+.tally{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px}
+.tal{
+  background:var(--plate);border:1px solid var(--etch);border-radius:8px;
+  padding:15px 9px;text-align:center;
+}
+.tal .n{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:34px;line-height:.95;font-variant-numeric:tabular-nums;
+}
+.tal .l{
+  font-family:'Saira Condensed',sans-serif;font-weight:600;
+  font-size:9.5px;color:var(--dim);letter-spacing:.13em;
+  text-transform:uppercase;margin-top:6px;line-height:1.2;
+}
+.tal.good{border-color:rgba(63,216,222,.3)}
+.tal.good .n{color:var(--secure)}
+.tal.gone{border-color:rgba(255,176,32,.3)}
+.tal.gone .n{color:var(--signal)}
+.tal.bad{border-color:rgba(255,82,54,.35)}
+.tal.bad .n{color:var(--alarm)}
+
+/* progress rail under the tally */
+.prog{height:5px;background:var(--plate-2);border-radius:3px;overflow:hidden;margin-bottom:13px}
+.prog i{display:block;height:100%;background:var(--secure);width:0;transition:width .18s ease}
+
+.note{background:var(--plate);border:1px solid var(--etch);border-radius:8px;padding:14px 16px;margin-bottom:13px}
+.note .l{
+  font-family:'Saira Condensed',sans-serif;font-weight:600;
+  font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:10px;
+}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.ntag{background:var(--plate-2);border:1px solid var(--etch);border-radius:5px;padding:9px 13px;font-size:14px}
+.ntag.on{background:var(--bone);color:var(--ink);border-color:var(--bone);font-weight:700}
+
+.expect{
+  background:var(--plate);border:1px solid var(--etch);border-left:3px solid var(--etch-2);
+  border-radius:0 8px 8px 0;padding:15px 17px;margin-bottom:13px;font-size:15px;color:var(--dim);
+}
+.expect b{color:var(--bone)}
+.alarm{
+  background:var(--alarm-bg);border:1px solid rgba(255,82,54,.4);
+  border-left:4px solid var(--alarm);border-radius:0 8px 8px 0;
+  padding:18px;margin-bottom:13px;
+}
+.alarm h3{
+  margin:0 0 9px;font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:24px;color:var(--alarm);text-transform:uppercase;letter-spacing:.02em;
+}
+.alarm p{margin:0;font-size:15px;line-height:1.5}
+.good{
+  background:var(--secure-bg);border:1px solid rgba(63,216,222,.36);
+  border-left:4px solid var(--secure);border-radius:0 8px 8px 0;
+  padding:18px;margin-bottom:13px;
+}
+.good h3{
+  margin:0 0 9px;font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:24px;color:var(--secure);text-transform:uppercase;letter-spacing:.02em;
+}
+.good p{margin:0;font-size:15px;line-height:1.5}
+
+.ta{
+  width:100%;min-height:130px;background:var(--ink);border:1px solid var(--etch-2);
+  border-radius:7px;padding:14px;font-family:'JetBrains Mono',monospace;
+  font-size:14px;line-height:1.65;resize:vertical;
+}
+.ta:focus{border-color:var(--secure);outline:none}
+
+.arow{
+  display:flex;align-items:center;gap:14px;width:100%;
+  background:var(--plate);border:1px solid var(--etch);border-left:3px solid var(--etch-2);
+  border-radius:0 8px 8px 0;padding:16px 17px;margin-bottom:8px;text-align:left;
+}
+.arow:active{background:var(--plate-2);border-left-color:var(--signal)}
+.arow .t{font-weight:700;font-size:16px}
+.arow .d{color:var(--dim);font-size:13px;margin-top:2px;line-height:1.4}
+.arow.danger{border-left-color:rgba(255,82,54,.6)}
+.arow.danger .t{color:var(--alarm)}
+
+/* ---------- selectable manifest rows ---------- */
+.selrow{
+  display:flex;align-items:center;gap:12px;width:100%;
+  background:var(--plate);border:1px solid var(--etch);border-radius:7px;
+  padding:13px 14px;margin-bottom:6px;text-align:left;
+}
+.selrow.on{background:var(--secure-bg);border-color:rgba(63,216,222,.42)}
+.selbox{
+  width:24px;height:24px;border-radius:4px;border:2px solid var(--etch-2);
+  flex:none;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;color:transparent;
+}
+.selrow.on .selbox{background:var(--secure);border-color:var(--secure);color:var(--secure-ink)}
+.selrow .sm{flex:1;min-width:0}
+.selrow .sc{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;letter-spacing:.02em}
+.selrow .sn{color:var(--dim);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.minibtns{display:flex;gap:7px;margin-bottom:12px}
+.minibtn{
+  flex:1;background:var(--plate);border:1px solid var(--etch);border-radius:7px;
+  padding:13px;font-family:'Saira Condensed',sans-serif;font-weight:600;
+  font-size:14px;letter-spacing:.07em;text-transform:uppercase;text-align:center;
+}
+.minibtn:active{background:var(--plate-2)}
+
+.setup{padding:46px 0}
+.setup h1{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:34px;margin:0 0 10px;text-transform:uppercase}
+.setup p{color:var(--dim)}
+.setup code{
+  display:block;background:var(--plate);border-radius:7px;padding:15px;margin-top:14px;
+  font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--signal);
+  white-space:pre-wrap;word-break:break-all;
+}
+
+/* ---------- QR labels ---------- */
+.qrgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding-top:18px}
+.qrcard{
+  background:#fff;border-radius:8px;padding:0 0 16px;text-align:center;color:#0A0C11;
+  overflow:hidden;position:relative;
+}
+.qrcard .qbar{height:12px;margin-bottom:16px}
+.qrcard .qname{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:19px;
+  margin-top:12px;text-transform:uppercase;letter-spacing:.05em;
+}
+.qrcard .qsub{
+  font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:10px;
+  color:#5A6070;margin-top:3px;letter-spacing:.13em;text-transform:uppercase;
+}
+.qrcard img,.qrcard canvas{display:block;margin:0 auto}
+@media print{
+  body{background:#fff;color:#000;padding:0;background-image:none}
+  .top,.noprint{display:none !important}
+  .qrgrid{grid-template-columns:1fr 1fr;gap:22px}
+  .qrcard{border:1px solid #bbb;page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<script>
+/* ============================================================
+   CONFIG — EDIT THIS BLOCK ONLY
+   ============================================================ */
+
+/* 1. Firebase keys — same aksvr-shipping project as the shipping board. */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBvvUK6y_FbqOR7NoR1Z5KtL4VCvo1YNoI",
+  authDomain: "aksvr-shipping.firebaseapp.com",
+  databaseURL: "https://aksvr-shipping-default-rtdb.firebaseio.com",
+  projectId: "aksvr-shipping"
+};
+
+/* 2. Where this board stores its data.
+   NOTE: this is deliberately NOT the old slab_transfer node. That board only
+   ever stored a slab COUNT per safe, and its statuses ("home") don't exist
+   here. Sharing the node made this app inherit records it couldn't read.
+   The old board keeps working on its own data while you roll this out. */
+const DB_PATH = "aksvr/slab_custody";
+
+/* 3. Everyone who can move a safe. */
+const PEOPLE = [
+  "Hen","Winston","Pasan","Hunter","Celina","Joe",
+  "Donald","Marcus","Harrison","Kiara","Andrue","Jeff"
+];
+
+/* 4. Who gets the admin gear icon. Keep this list short. */
+const ADMINS = ["Hen","Winston"];
+
+/* 5. Rooms — every place a safe can physically be.
+   A room is a room, not a building. "building" is just a tag saying which
+   address it's at, so when TT3 moves to the store after the remodel you
+   change one word here (or from Admin) and nothing else has to change.
+   Exactly one room is the base: where safes get loaded, sealed and re-scanned. */
+const SEED_ROOMS = [
+  /* The base is wherever Singles & Slabs work — they load the safes, seal
+     them, and check them back in. It sits in the warehouse today and moves
+     to the store later; when it does, change its building from Admin. */
+  { name:"SINGLES & SLABS", building:"Warehouse", base:true  },
+  { name:"TT3",             building:"Warehouse", base:false },
+  { name:"TT1",             building:"Store",     base:false },
+  { name:"TT2",             building:"Store",     base:false },
+  { name:"EBAY LIVE",       building:"Store",     base:false }
+];
+
+/* 6. Starting safes. Admin can add more from inside the app. */
+const SEED_SAFES = [
+  { id:"tt1",  name:"TT1 LIVE",      color:"#FF5A4D", home:"SINGLES & SLABS" },
+  { id:"tt3",  name:"TT3 KOI SLABS", color:"#4D8DFF", home:"SINGLES & SLABS" },
+  { id:"ebay", name:"EBAY LIVE",     color:"#2FB344", home:"SINGLES & SLABS" }
+];
+
+/* 7. Tap-to-add notes. No typing required. */
+const NOTE_TAGS = ["Damage","Delay","Recount","Out for grading","Extra found","Other"];
+
+/* 7b. Why a slab gets taken out of a safe without being sold.
+   Every pull needs one of these — it's what keeps the return scan honest. */
+const PULL_REASONS = [
+  "Loaded by mistake","Out for grading","Damaged",
+  "Sold off-stream","Back to the shelf","Other"
+];
+
+/* 8. Minutes in transit before the timer turns amber, then red.
+   These are for a safe crossing between buildings — a drive. */
+const WARN_MIN = 30;
+const LATE_MIN = 60;
+
+/* 8b. A handoff between two rooms in the SAME building is a walk, not a
+   journey, so it gets no running clock. But a safe still showing "in transit"
+   hours later means nobody tapped arrived — worth flagging eventually. */
+const SAME_BUILDING_LATE_MIN = 240;
+
+/* 9. Google Sheet mirror. Paste the Apps Script /exec URL here. */
+const SHEET_WEBHOOK = "";
+
+/* 10. Photo and grade lookups. Rather than storing our own pictures, we send
+   the cert to whoever graded it — they already host better images than we'd
+   bother uploading, and theirs stay current.
+   The app picks the first grader whose pattern matches the cert number.
+   {CERT} is replaced with the cert. Add a grader by copying a line. */
+const GRADERS = [
+  /* TAG certs are one letter then 7 digits, e.g. V1234567 — unmistakable. */
+  { name:"TAG", test:/^[A-Z]\d{7}$/,   url:"https://tagd.co/{CERT}" },
+
+  /* PSA and CGC certs are both plain digits with overlapping lengths, so a
+     number alone can't tell you which company graded it. Rather than guess
+     and send you to the wrong site, the app offers both and you pick. */
+  { name:"PSA", test:/^\d{8,10}$/,     url:"https://www.psacard.com/cert/{CERT}" },
+  { name:"CGC", test:/^\d{9,11}$/,     url:"https://www.cgccards.com/certlookup/{CERT}/" }
+];
+
+/* 11. Prefix for auto-generated container numbers, e.g. CPH-001, CPH-002.
+   Printed big on every label so a box can be called out across the room. */
+const CODE_PREFIX = "CPH";
+</script>
+
+<header class="top hide" id="top">
+  <div class="top-in">
+    <div class="conn" id="conn"></div>
+    <div class="brand">Slab custody</div>
+    <div class="chipbar">
+      <button class="gear hide" id="gearBtn" aria-label="Admin">&#9881;</button>
+      <button class="chip-h" id="findBtn">Find a card</button>
+      <button class="chip-h" id="locBtn"></button>
+      <button class="chip-h" id="whoBtn"></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="setup hide" id="setup">
+    <h1>One thing left before this works.</h1>
+    <p>The Firebase keys aren't filled in. Open this file in a text editor, find the CONFIG block near the top, and paste in the config from your shipping board.</p>
+    <code>const FIREBASE_CONFIG = { apiKey: "..." };</code>
+  </section>
+
+  <section class="gate hide" id="gate">
+    <h1>Who's using this?</h1>
+    <p>Your name goes on every slab you scan and every safe you move. Tap once — this phone remembers you.</p>
+    <div class="grid2" id="namegrid"></div>
+  </section>
+
+  <section class="gate hide" id="locgate">
+    <h1>Where are you right now?</h1>
+    <p>You'll only get action buttons for safes that are actually with you. Switch any time from the top bar.</p>
+    <div class="grid2" id="locgrid"></div>
+  </section>
+
+  <section class="hide" id="board">
+    <div id="nextup"></div>
+    <div id="banner"></div>
+    <div class="stats" id="stats"></div>
+    <div class="cards" id="cards"></div>
+    <div class="sect">
+      <div class="sh">Recent activity</div>
+      <div id="history"></div>
+    </div>
+  </section>
+
+  <section class="detail hide" id="detail"></section>
+
+  <section class="hide" id="findview"></section>
+
+  <section class="hide" id="qrview"></section>
+
+</main>
+
+<div id="sheetHost"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const el = (t,c,h) => { const n=document.createElement(t); if(c)n.className=c; if(h!==undefined)n.innerHTML=h; return n; };
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms||14); } catch(e){} };
+
+  const store = {
+    get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+    set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  };
+
+  /* ---------- cert helpers ---------- */
+  /* Firebase keys can't contain . # $ [ ] / — and we want matching to ignore
+     punctuation and case so "1234-5678" and "12345678" are the same slab. */
+  const certKey = c => String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  const certShow = c => String(c||"").toUpperCase().trim();
+
+  function clock(ms){
+    const s=Math.max(0,Math.floor(ms/1000)), h=Math.floor(s/3600), m=Math.floor((s%3600)/60), x=s%60;
+    const p=n=>String(n).padStart(2,"0");
+    return h>0 ? h+":"+p(m)+":"+p(x) : p(m)+":"+p(x);
+  }
+  function human(ms){
+    const m=Math.round(ms/60000);
+    if (m<60) return m+" min";
+    return Math.floor(m/60)+"h "+(m%60)+"m";
+  }
+  const timeOf = ts => new Date(ts).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+  function dayOf(ts){
+    const d=new Date(ts);
+    if (d.toDateString()===new Date().toDateString()) return "Today";
+    return d.toLocaleDateString([],{month:"short",day:"numeric"});
+  }
+  const sameDay = ts => new Date(ts).toDateString()===new Date().toDateString();
+
+  /* ---------- state ---------- */
+  let db=null, me=store.get("slab_user")||"", myLoc=store.get("slab_loc")||"";
+  let safes={}, transfers={}, contents={}, cfg={}, events={}, sold={}, pulled={};
+  let view="board", viewSafe="", findPrefill="";
+  let booted=false;
+
+  const SAFES = () => {
+    const list = cfg.safes ? Object.keys(cfg.safes).map(k=>Object.assign({id:k},cfg.safes[k])) : [];
+    return list.sort((a,b)=>(a.order||0)-(b.order||0));
+  };
+  /* Rooms are objects now: {name, building, base}. LOCATIONS() still returns
+     plain names so the rest of the app reads the same, but everything that
+     cares about "is this the warehouse" asks isBase() instead of comparing
+     against a hardcoded string. */
+  const ROOMS = () => (cfg.rooms && cfg.rooms.length) ? cfg.rooms : SEED_ROOMS;
+  const LOCATIONS = () => ROOMS().map(r=>r.name);
+  const roomDef = n => ROOMS().find(r=>r.name===n) || {name:n,building:"",base:false};
+  const isBase = n => !!roomDef(n).base;
+  const baseRoom = () => { const r=ROOMS().find(x=>x.base); return r?r.name:(LOCATIONS()[0]||"SINGLES & SLABS"); };
+  const buildingOf = n => roomDef(n).building || "";
+  /* Two rooms count as the same building only when both actually name one —
+     a blank building is unknown, not a match. */
+  const sameBuilding = (a,b) => {
+    const x=buildingOf(a), y=buildingOf(b);
+    return !!x && !!y && x===y;
+  };
+  const lateMinsFor = t => (t && sameBuilding(t.from,t.to)) ? SAME_BUILDING_LATE_MIN : LATE_MIN;
+  const safeDef = id => SAFES().find(s=>s.id===id) || { id:id, name:id, color:"#78849A" };
+  /* A short number you can shout across a warehouse: CPH-001, CPH-002.
+     The name says what it's for, the number says which physical box it is. */
+  const makeCode = i => CODE_PREFIX+"-"+String(i+1).padStart(3,"0");
+  const codeOf = id => {
+    const d=safeDef(id);
+    if(d.code) return d.code;
+    const i=SAFES().findIndex(x=>x.id===id);
+    return makeCode(i<0?0:i);
+  };
+  const roomList = () => LOCATIONS().filter(l=>!isBase(l));
+  const contentsOf = id => contents[id] || {};
+  /* Raw cards have no cert, so they can't be reconciled by identity the way a
+     slab can. They ride along as counted lots instead: a name and a quantity,
+     checked back by counting rather than scanning. Everything else in the
+     system treats "count" as slabs only, so the two never get muddled. */
+  const isLot = c => !!(c && c.kind==="lot");
+  const certKeysOf = id => { const o=contentsOf(id); return Object.keys(o).filter(k=>!isLot(o[k])); };
+  const lotKeysOf  = id => { const o=contentsOf(id); return Object.keys(o).filter(k=>isLot(o[k])); };
+  const countOf = id => certKeysOf(id).length;
+  const rawCountOf = id => lotKeysOf(id).reduce((n,k)=>n+Number(contentsOf(id)[k].qty||0),0);
+
+  const STATUS_LABEL = {
+    idle:"Empty", loading:"Being loaded", sealed:"Sealed, ready",
+    transit:"On the move", deployed:"Out", returned:"Needs re-scan", rescan:"Re-scan open"
+  };
+  /* "Out" on its own tells you nothing useful — when a safe is at a room,
+     say which room, because that's the question you're actually asking. */
+  function statusLabel(safeId){
+    const s=safes[safeId]||{}, st=s.status||"idle";
+    if(st==="deployed") return "At "+(s.location||"a room");
+    if(st==="returned") return "Needs re-scan";
+    if(st==="transit"){
+      const t=s.transferId?transfers[s.transferId]:null;
+      return t?("Going to "+t.to):"On the move";
+    }
+    return STATUS_LABEL[st]||st;
+  }
+
+  /* ---------- sheet mirror ---------- */
+  function sheetSend(body){
+    return fetch(SHEET_WEBHOOK,{method:"POST",mode:"no-cors",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},body:body});
+  }
+  function qGet(){ try{ return JSON.parse(store.get("slab_queue")||"[]"); }catch(e){ return []; } }
+  function qPut(a){ store.set("slab_queue",JSON.stringify(a.slice(-50))); }
+  function postSheet(p){
+    if(!SHEET_WEBHOOK) return;
+    const body=JSON.stringify(p);
+    sheetSend(body).catch(function(){ const q=qGet(); q.push(body); qPut(q); });
+  }
+  function flushQueue(){
+    if(!SHEET_WEBHOOK) return;
+    const q=qGet(); if(!q.length) return; qPut([]);
+    q.forEach(function(b){ sheetSend(b).catch(function(){ const r=qGet(); r.push(b); qPut(r); }); });
+  }
+  window.addEventListener("online",flushQueue);
+
+  /* ---------- event log + sheet mirror ---------- */
+  /* Two kinds of message go to the sheet:
+     append  — one row onto a running log, never rewritten
+     replace — a whole tab wiped and rewritten, for "what's true right now"
+     The Apps Script decides which tab by name, so adding a tab later
+     doesn't need a change on this side. */
+  function logEvent(o){
+    const now=Date.now();
+    const ref=db.ref(DB_PATH+"/events").push();
+    ref.set(Object.assign({at:now,by:me},o));
+    postSheet({tab:"Activity", mode:"append", row:{
+      "When": new Date(now).toLocaleString(),
+      "Safe": safeDef(o.safe).name,
+      "Event": eventTitle(Object.assign({},o)),
+      "Slabs": o.count==null?"":o.count,
+      "Sold": o.sold==null?"":o.sold,
+      "Unmatched": o.unmatched==null?"":o.unmatched,
+      "Reason / note": o.note||"",
+      "By": me,
+      "Ref": ref.key
+    }});
+    /* anything that changes what's inside a safe refreshes the snapshot */
+    if(["seal","reconcile","pull","slabmove","unseal","removed"].indexOf(o.type)>=0){
+      setTimeout(pushSnapshot, 900);
+    }
+  }
+
+  /* Rewrites the "In safes now" tab so the sheet always shows current truth
+     instead of forcing anyone to replay the log to work out what's where. */
+  function pushSnapshot(){
+    if(!SHEET_WEBHOOK) return;
+    const rows=[];
+    SAFES().forEach(d=>{
+      const s=safes[d.id]||{};
+      certKeysOf(d.id).forEach(k=>{
+        const c=contentsOf(d.id)[k];
+        rows.push({
+          "Cert": certShow(c.cert),
+          "Card": c.card||"",
+          "Safe": d.name,
+          "Where": s.location||"",
+          "Status": statusLabel(d.id),
+          "Loaded by": c.addedBy||"",
+          "Loaded at": c.addedAt?new Date(c.addedAt).toLocaleString():""
+        });
+      });
+    });
+    postSheet({tab:"In safes now", mode:"replace", rows:rows});
+  }
+
+  /* ---------- boot ---------- */
+  if (String(FIREBASE_CONFIG.apiKey).indexOf("PASTE")===0){ $("setup").classList.remove("hide"); return; }
+
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.database();
+
+  firebase.database().ref(".info/connected").on("value", s=>{
+    const c=$("conn");
+    c.className="conn "+(s.val()?"on":"off");
+    c.title=s.val()?"Connected":"Offline — actions send when you're back";
+  });
+
+  db.ref(DB_PATH+"/config").on("value", s=>{
+    cfg=s.val()||{};
+    seedConfig();
+    render();
+  });
+  db.ref(DB_PATH+"/safes").on("value", s=>{ safes=s.val()||{}; seedSafes(); render(); });
+  db.ref(DB_PATH+"/contents").on("value", s=>{ contents=s.val()||{}; render(); });
+  db.ref(DB_PATH+"/transfers").limitToLast(80).on("value", s=>{ transfers=s.val()||{}; render(); });
+  db.ref(DB_PATH+"/events").limitToLast(60).on("value", s=>{ events=s.val()||{}; render(); });
+  db.ref(DB_PATH+"/sold").limitToLast(3000).on("value", s=>{ sold=s.val()||{}; });
+  db.ref(DB_PATH+"/pulled").limitToLast(3000).on("value", s=>{ pulled=s.val()||{}; });
+
+  function seedConfig(){
+    if(!cfg.rooms){
+      db.ref(DB_PATH+"/config/rooms").set(SEED_ROOMS);
+    }
+    if(!cfg.safes){
+      const o={};
+      SEED_SAFES.forEach((d,i)=>{
+        o[d.id]={name:d.name,color:d.color,home:d.home,order:i,code:makeCode(i)};
+      });
+      db.ref(DB_PATH+"/config/safes").set(o);
+    }
+  }
+  const KNOWN_STATUS = ["idle","loading","sealed","transit","deployed","returned","rescan"];
+
+  function seedSafes(){
+    SAFES().forEach(d=>{
+      if(!safes[d.id]){
+        db.ref(DB_PATH+"/safes/"+d.id).set({location:d.home||baseRoom(),status:"idle"});
+        return;
+      }
+      heal(d.id);
+    });
+  }
+
+  /* A safe carrying a status or a location this app doesn't recognise shows no
+     buttons at all, which looks like the app is broken. Rather than leave
+     someone stuck, translate it into the nearest thing that makes sense. */
+  function heal(id){
+    const s=safes[id]||{}, fix={};
+    if(KNOWN_STATUS.indexOf(s.status)<0){
+      fix.status = countOf(id)>0 ? "loading" : "idle";
+    }
+    if(!s.location){
+      fix.location = safeDef(id).home || baseRoom();
+    } else if(LOCATIONS().indexOf(s.location)<0){
+      /* Don't move the safe — a record saying STORE means it's physically at
+         the store. Add the place to the list instead so it can be selected. */
+      const R=ROOMS().slice();
+      R.push({name:s.location,building:"",base:false});
+      db.ref(DB_PATH+"/config/rooms").set(R);
+    }
+    if(Object.keys(fix).length) db.ref(DB_PATH+"/safes/"+id).update(fix);
+  }
+
+  /* ---------- routing ---------- */
+  function readUrlSafe(){
+    const m=location.search.match(/[?&]safe=([^&]+)/);
+    return m?decodeURIComponent(m[1]).toLowerCase():"";
+  }
+  const urlSafe = readUrlSafe();
+
+  function hideAll(){
+    ["gate","locgate","board","top","detail","qrview","findview"].forEach(i=>$(i).classList.add("hide"));
+  }
+  function showGate(){
+    hideAll(); $("gate").classList.remove("hide");
+    const g=$("namegrid"); g.innerHTML="";
+    PEOPLE.forEach(n=>{
+      const b=el("button","pick",esc(n));
+      b.onclick=()=>{ me=n; store.set("slab_user",n); route(); };
+      g.appendChild(b);
+    });
+  }
+  function showLocGate(){
+    hideAll(); $("locgate").classList.remove("hide");
+    const host=$("locgrid").parentNode;
+    $("locgrid").innerHTML="";
+    host.querySelectorAll(".bldg").forEach(n=>n.remove());
+
+    /* Group rooms under their building, because "which room" is only an
+       unambiguous question once you know which address you're standing at. */
+    const groups={};
+    ROOMS().forEach(r=>{
+      const b=r.building||"Other";
+      (groups[b]=groups[b]||[]).push(r);
+    });
+    Object.keys(groups).forEach(b=>{
+      const wrap=el("div","bldg");
+      wrap.appendChild(el("div","sh",esc(b)));
+      const grid=el("div","grid2");
+      groups[b].forEach(r=>{
+        const btn=el("button","pick");
+        btn.appendChild(el("div","",esc(r.name)));
+        if(r.base) btn.appendChild(el("div","pick-tag","load · seal · check back in"));
+        btn.onclick=()=>{ myLoc=r.name; store.set("slab_loc",r.name); route(); };
+        grid.appendChild(btn);
+      });
+      wrap.appendChild(grid);
+      host.appendChild(wrap);
+    });
+  }
+  function route(){
+    if(!me){ showGate(); return; }
+    if(!myLoc){ showLocGate(); return; }
+    if(!booted){
+      booted=true;
+      if(urlSafe && SAFES().some(s=>s.id===urlSafe)){ view="safe"; viewSafe=urlSafe; }
+    }
+    hideAll();
+    $("top").classList.remove("hide");
+    $("whoBtn").textContent=me;
+    $("locBtn").textContent=myLoc;
+    $("gearBtn").classList.toggle("hide", ADMINS.indexOf(me)<0);
+    if(view==="safe"){ $("detail").classList.remove("hide"); paintDetail(); }
+    else if(view==="find"){ $("findview").classList.remove("hide"); paintFind(); }
+    else if(view==="qr"){ $("qrview").classList.remove("hide"); paintQr(); }
+    else { $("board").classList.remove("hide"); paintBoard(); }
+  }
+  function go(v,s){ view=v; viewSafe=s||""; route(); window.scrollTo(0,0); }
+
+  $("whoBtn").onclick=()=>{ me=""; store.set("slab_user",""); route(); };
+  $("locBtn").onclick=()=>{ myLoc=""; store.set("slab_loc",""); route(); };
+  $("gearBtn").onclick=openAdmin;
+  $("findBtn").onclick=()=>go("find");
+
+  function render(){
+    if(!me||!myLoc||!SAFES().length){ route(); return; }
+    route();
+  }
+
+  /* ---------- board ---------- */
+  function paintBoard(){ renderNext(); renderBanner(); renderStats(); renderCards(); renderHistory(); }
+
+  /* The board decides what matters most right now, so nobody has to work out
+     which safe needs what. Order runs most-urgent first; the first hit wins. */
+  function nextAction(){
+    const list=SAFES();
+    let hit=null;
+    const scan=(fn)=>{ if(hit) return; const f=list.find(fn); if(f) hit=f; };
+
+    /* a safe sitting unscanned is the only thing that loses you money silently */
+    scan(d=>safes[d.id]&&safes[d.id].status==="returned"&&safes[d.id].location===myLoc);
+    if(hit) return {safe:hit,label:"Start re-scan on "+hit.name,
+      why:"It's back and nobody knows what sold yet.",cls:"btn-hot",fn:()=>openRescan(hit.id)};
+
+    scan(d=>safes[d.id]&&safes[d.id].status==="rescan"&&safes[d.id].location===myLoc);
+    if(hit) return {safe:hit,label:"Finish re-scan on "+hit.name,
+      why:"You left this half done.",cls:"btn-hot",fn:()=>openRescan(hit.id)};
+
+    scan(d=>{
+      const s=safes[d.id]; if(!s||s.status!=="transit") return false;
+      const t=s.transferId?transfers[s.transferId]:null;
+      return t&&t.to===myLoc;
+    });
+    if(hit) return {safe:hit,label:"Mark "+hit.name+" arrived",
+      why:"It's on its way here. One tap when you see it.",cls:"btn-go",fn:()=>markArrived(hit.id)};
+
+    scan(d=>safes[d.id]&&safes[d.id].status==="sealed"&&safes[d.id].location===myLoc);
+    if(hit) return {safe:hit,label:"Send "+hit.name+" out",
+      why:"Sealed and ready to go to a room.",cls:"btn-go",fn:()=>openDeploy(hit.id)};
+
+    scan(d=>safes[d.id]&&safes[d.id].status==="loading"&&safes[d.id].location===myLoc&&countOf(d.id)>0);
+    if(hit) return {safe:hit,label:"Seal "+hit.name,
+      why:countOf(hit.id)+" slabs loaded. Lock the list before it travels.",cls:"btn-warn",fn:()=>openSeal(hit.id)};
+
+    scan(d=>safes[d.id]&&(safes[d.id].status==="idle"||safes[d.id].status==="loading")&&safes[d.id].location===myLoc);
+    if(hit) return {safe:hit,label:"Load "+hit.name,
+      why:"Empty and waiting for slabs.",cls:"btn-go",fn:()=>openLoad(hit.id)};
+
+    return null;
+  }
+
+  function renderNext(){
+    const host=$("nextup"); if(!host) return;
+    host.innerHTML="";
+    const a=nextAction();
+    if(!a){
+      const q=el("div","allclear");
+      q.innerHTML="<div class='ac-l'>Nothing waiting on you at "+esc(myLoc)+
+        "</div><div class='ac-d'>Tap a safe below to look inside, or scan the sticker on the safe itself.</div>";
+      host.appendChild(q);
+      return;
+    }
+    const box=el("div","nextbox");
+    box.appendChild(el("div","nx-l","Next up"));
+    box.appendChild(el("div","nx-w",esc(a.why)));
+    const b=el("button","btn "+a.cls,esc(a.label));
+    b.onclick=a.fn;
+    box.appendChild(b);
+    const alt=el("button","btn btn-q","Something else — show me the safe first");
+    alt.onclick=()=>go("safe",a.safe.id);
+    box.appendChild(alt);
+    host.appendChild(box);
+  }
+
+  function renderBanner(){
+    const host=$("banner"); if(!host) return;
+    host.innerHTML="";
+    SAFES().forEach(d=>{
+      const s=safes[d.id]; if(!s) return;
+      if(s.status==="transit"){
+        const t=transfers[s.transferId]; if(!t) return;
+        const local=sameBuilding(t.from,t.to);
+        if(Date.now()-t.sentAt >= lateMinsFor(t)*60000){
+          const b=el("div","banner"+(local?" warn":""));
+          b.innerHTML= local
+            ? "<div><b>"+esc(d.name)+"</b> has been marked as moving to "+esc(t.to)+
+              " for "+human(Date.now()-t.sentAt)+
+              ". It's the same building, so someone probably just forgot to tap arrived.</div>"
+            : "<div><b>"+esc(d.name)+"</b> has been in transit "+
+              human(Date.now()-t.sentAt)+". Call "+esc(t.sentBy)+" and confirm where it is.</div>";
+          host.appendChild(b);
+        }
+      }
+      if(s.status==="returned"){
+        const b=el("div","banner warn");
+        b.innerHTML="<div><b>"+esc(d.name)+"</b> is back and hasn't been scanned yet. Until it's scanned we don't know what sold.</div>";
+        host.appendChild(b);
+      }
+    });
+  }
+
+  function renderStats(){
+    const out=SAFES().filter(d=>safes[d.id]&&(safes[d.id].status==="deployed"||safes[d.id].status==="transit")).length;
+    const onFloor=SAFES().reduce((n,d)=>{
+      const s=safes[d.id];
+      return n + ((s&&(s.status==="deployed"||s.status==="transit"))?countOf(d.id):0);
+    },0);
+    const wk=Date.now()-7*86400000;
+    const unmatched=Object.keys(events).map(k=>events[k])
+      .filter(e=>e.type==="reconcile"&&e.at>wk)
+      .reduce((n,e)=>n+Number(e.unmatched||0),0);
+
+    const host=$("stats"); host.innerHTML="";
+    [["Safes out",out,""],["Slabs on floor",onFloor,""],["Unmatched, 7d",unmatched,unmatched>0?"bad":""]]
+      .forEach(([l,n,cls])=>{
+        const s=el("div","stat"+(cls?" "+cls:""));
+        s.appendChild(el("div","n mono",String(n)));
+        s.appendChild(el("div","l",l));
+        host.appendChild(s);
+      });
+  }
+
+  function renderCards(){
+    const host=$("cards"); host.innerHTML="";
+    SAFES().forEach(def=>{
+      const s=safes[def.id]; if(!s) return;
+      const st=s.status||"idle";
+      const t=(st==="transit"&&s.transferId)?transfers[s.transferId]:null;
+      const here = st==="transit" ? (t&&t.to===myLoc) : (s.location===myLoc);
+
+      const card=el("button","card"+(st==="returned"?" hot":"")+(here?"":" dim"));
+      card.onclick=()=>go("safe",def.id);
+      const rail=el("div","rail");
+      rail.style.background="repeating-linear-gradient(135deg,"+(def.color||"#78849A")+
+        " 0 6px,transparent 6px 12px)";
+      const body=el("div","body");
+      card.appendChild(rail); card.appendChild(body);
+
+      const head=el("div","chead");
+      const nm=el("div");
+      nm.appendChild(el("div","ccode",esc(codeOf(def.id))));
+      nm.appendChild(el("div","cname",esc(def.name)));
+      const bld=buildingOf(s.location);
+      nm.appendChild(el("div","csub", st==="transit"&&t
+        ? "Heading to "+esc(t.to)+(buildingOf(t.to)?" · "+esc(buildingOf(t.to)):"")
+        : "At "+esc(s.location||"—")+(bld?" · "+esc(bld):"")));
+      head.appendChild(nm);
+      let pc="off";
+      if(st==="deployed") pc="ok";
+      else if(st==="returned") pc="hot";
+      else if(st==="transit"||st==="rescan"||st==="loading") pc="warn";
+      else if(st==="sealed") pc="ok";
+      head.appendChild(el("div","pill "+pc, statusLabel(def.id)));
+      body.appendChild(head);
+
+      if(st==="transit"&&t){
+        if(!sameBuilding(t.from,t.to)){
+          const tm=el("div","timer");
+          tm.dataset.since=t.sentAt; tm.dataset.late=lateMinsFor(t);
+          tm.innerHTML='<div class="tv mono">--:--</div><div class="tl">on the road</div>';
+          body.appendChild(tm);
+        }
+        body.appendChild(el("div","meta","<b>"+esc(t.sentBy)+"</b> sent "+esc(String(t.countOut))+
+          " slabs from "+esc(t.from)+" at "+timeOf(t.sentAt)+
+          (sameBuilding(t.from,t.to)?" · same building, waiting on arrival tap":"")));
+      } else {
+        body.appendChild(el("div","meta","<b>"+countOf(def.id)+"</b> slabs"+
+          (rawCountOf(def.id)?" · <b>"+rawCountOf(def.id)+"</b> raw":"")+
+          (s.sealedAt?" · sealed "+dayOf(s.sealedAt)+" by "+esc(s.sealedBy||""):"")));
+      }
+      host.appendChild(card);
+    });
+    tick();
+  }
+
+  function renderHistory(){
+    const host=$("history");
+    const list=Object.keys(events).map(k=>Object.assign({key:k},events[k]))
+      .sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,18);
+    host.innerHTML="";
+    if(!list.length){ host.appendChild(el("div","empty","Nothing logged yet. Load a safe and it shows up here.")); return; }
+    list.forEach(e=>{
+      const def=safeDef(e.safe);
+      const row=el("div","row");
+      const d=el("div","rd"); d.style.background=def.color||"#868C9C";
+      const m=el("div","rm");
+      m.appendChild(el("div","rt",esc(def.name)+" · "+esc(eventTitle(e))));
+      m.appendChild(el("div","rs", dayOf(e.at)+" "+timeOf(e.at)+" · "+esc(e.by||"")+
+        (e.note?" · "+esc(e.note):"")));
+      let tag=null;
+      if(e.type==="reconcile"){
+        const un=Number(e.unmatched||0);
+        tag=el("div","tag "+(un>0?"bad":"ok"), un>0?un+" unmatched":e.sold+" sold");
+      } else if(e.type==="seal") tag=el("div","tag ok",e.count+" in");
+      else if(e.type==="slabmove") tag=el("div","tag warn",e.count+" moved");
+      if(tag){ row.appendChild(d); row.appendChild(m); row.appendChild(tag); }
+      else { row.appendChild(d); row.appendChild(m); }
+      host.appendChild(row);
+    });
+  }
+  function eventTitle(e){
+    switch(e.type){
+      case "seal": return "sealed at "+(e.from||"warehouse");
+      case "deploy": return "sent to "+e.to;
+      case "arrive": return "arrived at "+e.to;
+      case "return": return "sent back to "+e.to;
+      case "rescan": return "re-scan started";
+      case "reconcile": return "reconciled";
+      case "slabmove": return "slabs → "+safeDef(e.toSafe).name;
+      case "void": return "move voided";
+      default: return e.type||"";
+    }
+  }
+
+  function tick(){
+    document.querySelectorAll(".timer").forEach(t=>{
+      const since=Number(t.dataset.since); if(!since) return;
+      const late=Number(t.dataset.late)||LATE_MIN;
+      const warn=Math.min(WARN_MIN, late);
+      const ms=Date.now()-since, mins=ms/60000;
+      const v=t.querySelector(".tv"); if(v) v.textContent=clock(ms);
+      t.classList.toggle("w",mins>=warn&&mins<late);
+      t.classList.toggle("l",mins>=late);
+    });
+  }
+  setInterval(()=>{ tick(); if(view==="board"&&!$("board").classList.contains("hide")) renderBanner(); },1000);
+
+  /* ---------- safe detail (the QR landing page) ---------- */
+  function paintDetail(){
+    const host=$("detail"); host.innerHTML="";
+    const def=safeDef(viewSafe), s=safes[viewSafe];
+    if(!s){ host.appendChild(el("div","empty","That safe isn't set up yet.")); return; }
+    const st=s.status||"idle";
+    const t=(st==="transit"&&s.transferId)?transfers[s.transferId]:null;
+    const here = st==="transit" ? (t&&t.to===myLoc) : (s.location===myLoc);
+
+    const back=el("button","back","← All safes"); back.onclick=()=>go("board"); host.appendChild(back);
+
+    const dh=el("div","dhead");
+    const bar=el("div","dbar");
+    bar.style.background="repeating-linear-gradient(135deg,"+(def.color||"#78849A")+
+      " 0 6px,transparent 6px 12px)";
+    const tx=el("div");
+    tx.appendChild(el("div","ccode",esc(codeOf(viewSafe))));
+    tx.appendChild(el("div","dtitle",esc(def.name)));
+    tx.appendChild(el("div","dsub", st==="transit"&&t
+      ? "In transit · "+esc(t.from)+" → "+esc(t.to)
+      : statusLabel(viewSafe)+" · "+esc(String(countOf(viewSafe)))+" slabs"));
+    dh.appendChild(bar); dh.appendChild(tx);
+    host.appendChild(dh);
+
+    let stampCls="off";
+    if(st==="deployed"||st==="sealed") stampCls="ok";
+    else if(st==="returned") stampCls="hot";
+    else if(st==="transit"||st==="rescan"||st==="loading") stampCls="warn";
+
+    const ro=el("div","readout");
+    ro.appendChild(el("div","rnum mono",String(countOf(viewSafe))));
+    ro.appendChild(el("div","rlbl", st==="sealed"||st==="deployed"||st==="transit"
+      ? "slabs sealed inside" : "slabs inside"));
+    if(rawCountOf(viewSafe)>0){
+      ro.appendChild(el("div","rmeta","Plus "+rawCountOf(viewSafe)+" raw cards in "+
+        lotKeysOf(viewSafe).length+" lot"+(lotKeysOf(viewSafe).length===1?"":"s")));
+    }
+    if(s.sealedAt){
+      ro.appendChild(el("div","rmeta","Sealed "+dayOf(s.sealedAt)+" at "+timeOf(s.sealedAt)+
+        " by "+esc(s.sealedBy||"")));
+    }
+    ro.appendChild(el("div","stamp "+stampCls, esc(statusLabel(viewSafe))));
+    host.appendChild(ro);
+
+    if(st==="transit"&&t){
+      if(sameBuilding(t.from,t.to)){
+        host.appendChild(el("div","meta","Walking over from <b>"+esc(t.from)+
+          "</b> since "+timeOf(t.sentAt)+". Same building, so no clock on it."));
+      } else {
+        const tm=el("div","timer");
+        tm.dataset.since=t.sentAt; tm.dataset.late=lateMinsFor(t);
+        tm.innerHTML='<div class="tv mono">--:--</div><div class="tl">on the road</div>';
+        host.appendChild(tm);
+      }
+    }
+
+    /* action buttons, gated by whether you're with the safe */
+    const acts=el("div");
+    if(!here && st!=="transit"){
+      const n=el("div","awaynote");
+      n.appendChild(el("span","","This safe is recorded at "+esc(s.location||"—")+
+        ", and you're at "+esc(myLoc)+". "));
+      const b=el("button","","I'm somewhere else");
+      b.onclick=()=>{ myLoc=""; store.set("slab_loc",""); route(); };
+      n.appendChild(b);
+      acts.appendChild(n);
+      /* The record can simply be wrong — a safe gets carried without anyone
+         tapping. Let whoever is standing in front of it say so. */
+      const claim=el("button","btn btn-q","It's actually here in "+esc(myLoc)+" — fix the record");
+      claim.onclick=()=>claimHere(viewSafe);
+      acts.appendChild(claim);
+    } else {
+      if(st==="idle"||st==="loading"){
+        addBtn(acts,"btn-go","LOAD SLABS IN",()=>openLoad(viewSafe));
+        if(countOf(viewSafe)>0){
+          addBtn(acts,"btn-warn","SEAL AND LOCK MANIFEST",()=>openSeal(viewSafe));
+          addBtn(acts,"btn-q","Take slabs back out",()=>openPull(viewSafe));
+        }
+      }
+      else if(st==="sealed"){
+        addBtn(acts,"btn-go","SEND TO A ROOM",()=>openDeploy(viewSafe));
+        addBtn(acts,"btn-q","Take slabs out",()=>openPull(viewSafe));
+        addBtn(acts,"btn-q","Unseal — I need to add more slabs",()=>openUnseal(viewSafe));
+      }
+      else if(st==="transit"){
+        if(t&&t.to===myLoc) addBtn(acts,"btn-hot","MARK ARRIVED AT "+t.to,()=>markArrived(viewSafe));
+        else acts.appendChild(awayNote("Arriving at "+(t?t.to:"—")+", not here."));
+        addBtn(acts,"btn-q","Sent by mistake? Cancel this move",()=>cancelMove(viewSafe));
+      }
+      else if(st==="deployed"){
+        addBtn(acts,"btn-warn","MOVE SLABS TO ANOTHER SAFE",()=>openSlabMove(viewSafe));
+        addBtn(acts,"btn-go","SEND SAFE BACK TO "+esc(baseRoom()),()=>openReturn(viewSafe));
+        addBtn(acts,"btn-q","Take slabs out (not a sale)",()=>openPull(viewSafe));
+      }
+      else if(st==="returned"){
+        addBtn(acts,"btn-hot","START RE-SCAN",()=>openRescan(viewSafe));
+      }
+      else if(st==="rescan"){
+        addBtn(acts,"btn-hot","CONTINUE RE-SCAN",()=>openRescan(viewSafe));
+      }
+    }
+    host.appendChild(acts);
+
+    /* contents list */
+    const list=certKeysOf(viewSafe).map(k=>contentsOf(viewSafe)[k])
+      .sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+    const lots=lotKeysOf(viewSafe).map(k=>Object.assign({k:k},contentsOf(viewSafe)[k]));
+    const sect=el("div","sect");
+    sect.appendChild(el("div","sh","What's inside ("+list.length+")"));
+    if(!list.length){
+      sect.appendChild(el("div","empty","Empty. Load slabs in to build the manifest."));
+    } else {
+      const search=el("input","searchbar");
+      search.placeholder="Find a cert #…"; search.autocomplete="off";
+      sect.appendChild(search);
+      const rows=el("div","manifest");
+      const draw=(q)=>{
+        rows.innerHTML="";
+        const f=q?list.filter(c=>certKey(c.cert).indexOf(certKey(q))>=0||
+          String(c.card||"").toUpperCase().indexOf(q.toUpperCase())>=0):list;
+        if(!f.length){ rows.appendChild(el("div","empty","No match in this safe.")); return; }
+        f.forEach((c,i)=>{
+          const r=el("div","crow");
+          r.appendChild(el("div","cidx",String(i+1).padStart(3,"0")));
+          const m=el("div","cm");
+          const u=certUrl(c.cert);
+          const many=gradersFor(c.cert).filter(g=>g.url).length>1;
+          if(u){
+            const a=el("a","cc link"); a.href=u; a.target="_blank"; a.rel="noopener";
+            a.textContent=certShow(c.cert);
+            m.appendChild(a);
+          } else if(many){
+            const b=el("button","cc link"); b.textContent=certShow(c.cert);
+            b.style.background="none"; b.style.padding="0";
+            b.onclick=()=>{ findPrefill=certShow(c.cert); go("find"); };
+            m.appendChild(b);
+          } else {
+            m.appendChild(el("div","cc",esc(certShow(c.cert))));
+          }
+          if(c.card) m.appendChild(el("div","cn",esc(c.card)));
+          r.appendChild(m);
+          r.appendChild(el("div","cwhen",dayOf(c.addedAt)));
+          rows.appendChild(r);
+        });
+      };
+      search.oninput=()=>draw(search.value.trim());
+      sect.appendChild(rows);
+      draw("");
+    }
+    host.appendChild(sect);
+
+    if(lots.length){
+      const ls=el("div","sect");
+      ls.appendChild(el("div","sh","Raw cards ("+rawCountOf(viewSafe)+" in "+lots.length+" lot"+(lots.length===1?"":"s")+")"));
+      lots.forEach(L=>{
+        const r=el("div","crow");
+        r.appendChild(el("div","cidx","LOT"));
+        const m=el("div","cm");
+        m.appendChild(el("div","cc",esc(String(L.qty))+" × "+esc(L.name||"Unnamed lot")));
+        m.appendChild(el("div","cn","Counted, not scanned"));
+        r.appendChild(m);
+        r.appendChild(el("div","cwhen",dayOf(L.addedAt)));
+        ls.appendChild(r);
+      });
+      host.appendChild(ls);
+    }
+    tick();
+  }
+  function addBtn(host,cls,label,fn){
+    const b=el("button","btn "+cls,label); b.onclick=fn; host.appendChild(b);
+  }
+  function awayNote(txt){
+    const n=el("div","awaynote");
+    n.appendChild(el("span","",esc(txt)+" "));
+    const b=el("button","","Switch location");
+    b.onclick=()=>{ myLoc=""; store.set("slab_loc",""); route(); };
+    n.appendChild(b);
+    return n;
+  }
+
+  /* ---------- correct a safe's location ---------- */
+  function claimHere(safeId){
+    const def=safeDef(safeId), s=safes[safeId]||{};
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Move "+esc(def.name)+" to "+esc(myLoc)+"?"));
+      sh.appendChild(el("p","lede","Only do this if the safe is physically in front of you right now. It corrects the record — it doesn't touch what's inside."));
+      const w=el("div","expect");
+      w.innerHTML="Recorded at <b>"+esc(s.location||"—")+"</b>. You're saying it's at <b>"+
+        esc(myLoc)+"</b>. This gets logged with your name.";
+      sh.appendChild(w);
+      const yes=el("button","btn btn-warn","YES, IT'S IN FRONT OF ME");
+      yes.onclick=()=>{
+        const st = isBase(myLoc)
+          ? (countOf(safeId)||rawCountOf(safeId) ? "returned" : "idle")
+          : "deployed";
+        if(s.transferId){
+          db.ref(DB_PATH+"/transfers/"+s.transferId)
+            .update({status:"void",voidedBy:me+" (location fix)",voidedAt:Date.now()});
+        }
+        db.ref(DB_PATH+"/safes/"+safeId).update({location:myLoc,status:st,transferId:null});
+        logEvent({type:"fix",safe:safeId,to:myLoc,note:"corrected from "+(s.location||"unknown")});
+        buzz(); closeSheet();
+      };
+      sh.appendChild(yes);
+      const no=el("button","btn btn-q","Never mind"); no.onclick=closeSheet; sh.appendChild(no);
+    });
+  }
+
+  /* ---------- sheet plumbing ---------- */
+  function closeSheet(){ $("sheetHost").innerHTML=""; }
+  function openSheet(build){
+    const scrim=el("div","scrim"), sh=el("div","sheet");
+    scrim.onclick=e=>{ if(e.target===scrim) closeSheet(); };
+    build(sh); scrim.appendChild(sh);
+    $("sheetHost").innerHTML=""; $("sheetHost").appendChild(scrim);
+    return sh;
+  }
+  function noteBox(sheet, onPick){
+    let picked="";
+    const n=el("div","note");
+    n.appendChild(el("div","l","Anything worth noting? (optional)"));
+    const wrap=el("div","tags");
+    NOTE_TAGS.forEach(tg=>{
+      const b=el("button","ntag",esc(tg));
+      b.onclick=()=>{
+        if(picked===tg){ picked=""; b.classList.remove("on"); }
+        else { picked=tg; wrap.querySelectorAll(".ntag").forEach(x=>x.classList.remove("on")); b.classList.add("on"); }
+        onPick(picked);
+      };
+      wrap.appendChild(b);
+    });
+    n.appendChild(wrap);
+    sheet.appendChild(n);
+  }
+  function scanField(sheet, label, hint, onEnter){
+    const w=el("div","scanwrap");
+    w.appendChild(el("div","l",label));
+    const i=el("input","scaninput");
+    i.placeholder="Scan or type cert #";
+    i.autocomplete="off"; i.autocapitalize="characters"; i.spellcheck=false;
+    i.addEventListener("keydown",ev=>{
+      if(ev.key==="Enter"){
+        ev.preventDefault();
+        const v=i.value.trim();
+        if(v){ onEnter(v); i.value=""; }
+      }
+    });
+    w.appendChild(i);
+    w.appendChild(el("div","scanhint",hint));
+    sheet.appendChild(w);
+    setTimeout(()=>{ try{ i.focus(); }catch(e){} },120);
+    return i;
+  }
+
+  /* ---------- load slabs in ---------- */
+  function openLoad(safeId){
+    const def=safeDef(safeId);
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Load "+esc(def.name)));
+      sh.appendChild(el("p","lede","Scan each slab as it goes in. Every cert you add is what the safe will be held to when it comes back."));
+
+      const tally=el("div","tally");
+      const draw=()=>{
+        const n=countOf(safeId);
+        tally.innerHTML='<div class="tal good"><div class="n mono">'+n+
+          '</div><div class="l">IN THE SAFE</div></div>'+
+          '<div class="tal"><div class="n mono">'+sessionAdds+
+          '</div><div class="l">ADDED NOW</div></div>'+
+          '<div class="tal"><div class="n mono">'+sessionDupes+
+          '</div><div class="l">ALREADY IN</div></div>';
+      };
+      let sessionAdds=0, sessionDupes=0;
+      sh.appendChild(tally);
+
+      const last=el("div","expect"); last.innerHTML="<b>Ready.</b> Scan the first slab.";
+      sh.appendChild(last);
+
+      const input=scanField(sh,"Scan slab",
+        "Scanner types it for you and hits enter. Typing works too.",
+        v=>{
+          const k=certKey(v);
+          if(!k){ return; }
+          const where=findCert(k);
+          if(where&&where!==safeId){
+            last.innerHTML="<b style='color:#FF6B57'>"+esc(certShow(v))+"</b> is already logged in <b>"+
+              esc(safeDef(where).name)+"</b>. Pull it from there first.";
+            buzz(60); return;
+          }
+          if(contentsOf(safeId)[k]){
+            sessionDupes++; draw();
+            last.innerHTML="<b>"+esc(certShow(v))+"</b> was already in this safe. Not counted twice.";
+            buzz(); return;
+          }
+          db.ref(DB_PATH+"/contents/"+safeId+"/"+k).set({
+            cert:certShow(v), card:"", addedBy:me, addedAt:Date.now()
+          });
+          sessionAdds++; draw();
+          last.innerHTML="<b style='color:#3ECF8E'>"+esc(certShow(v))+"</b> added.";
+          buzz();
+        });
+
+      const paste=el("button","btn btn-q","Paste a list instead");
+      paste.onclick=()=>openPaste(safeId);
+      sh.appendChild(paste);
+
+      const lot=el("button","btn btn-q","Add raw cards (no cert to scan)");
+      lot.onclick=()=>openLot(safeId);
+      sh.appendChild(lot);
+
+      const undo=el("button","btn btn-q","Take a slab back out");
+      undo.onclick=()=>openPull(safeId,"load");
+      sh.appendChild(undo);
+
+      const done=el("button","btn btn-go","DONE LOADING");
+      done.onclick=()=>{
+        db.ref(DB_PATH+"/safes/"+safeId).update({status:"loading"});
+        closeSheet();
+      };
+      sh.appendChild(done);
+      draw();
+      void input;
+    });
+  }
+
+  function findCert(k){
+    let found="";
+    Object.keys(contents).forEach(sid=>{
+      if(contents[sid]&&contents[sid][k]) found=sid;
+    });
+    return found;
+  }
+
+  function openPaste(safeId){
+    const def=safeDef(safeId);
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Paste a list"));
+      sh.appendChild(el("p","lede","One slab per line. Cert number first, card name after it if you have it. Commas or tabs both work — a SortSwift export pastes straight in."));
+      const ta=el("textarea","ta");
+      ta.placeholder="1234567, Charizard VMAX PSA 10\n1234568, Umbreon VMAX\n1234569";
+      sh.appendChild(ta);
+      const out=el("div","expect"); out.innerHTML="Nothing pasted yet.";
+      sh.appendChild(out);
+      const go=el("button","btn btn-go","ADD THESE TO "+esc(def.name));
+      go.onclick=()=>{
+        const parsed=parseList(ta.value);
+        if(!parsed.length){ out.innerHTML="<b>Couldn't find any cert numbers in that.</b>"; return; }
+        let added=0, dupes=0, elsewhere=[];
+        const updates={};
+        parsed.forEach(p=>{
+          const k=certKey(p.cert); if(!k) return;
+          const where=findCert(k);
+          if(where&&where!==safeId){ elsewhere.push(p.cert+" (in "+safeDef(where).name+")"); return; }
+          if(contentsOf(safeId)[k]){ dupes++; return; }
+          updates[k]={cert:certShow(p.cert),card:p.card||"",addedBy:me,addedAt:Date.now()};
+          added++;
+        });
+        if(added) db.ref(DB_PATH+"/contents/"+safeId).update(updates);
+        buzz();
+        out.innerHTML="<b style='color:#3ECF8E'>"+added+" added.</b> "+
+          (dupes?dupes+" were already in this safe. ":"")+
+          (elsewhere.length?"<br><span style='color:#FF6B57'>Skipped "+elsewhere.length+
+            " already logged elsewhere: "+esc(elsewhere.slice(0,4).join(", "))+
+            (elsewhere.length>4?"…":"")+"</span>":"");
+        ta.value="";
+      };
+      sh.appendChild(go);
+      const back=el("button","btn btn-q","Back to scanning");
+      back.onclick=()=>openLoad(safeId);
+      sh.appendChild(back);
+    });
+  }
+  function parseList(text){
+    return String(text||"").split(/\r?\n/).map(line=>{
+      const raw=line.trim(); if(!raw) return null;
+      const parts=raw.split(/[,\t]/).map(x=>x.trim()).filter(Boolean);
+      if(!parts.length) return null;
+      let cert=parts[0], card=parts.slice(1).join(" ");
+      /* A cert has at least 4 digits in a row. This is what throws away
+         header rows like "Cert,Card" and stray text lines. */
+      if(!/\d{4,}/.test(cert)){
+        const alt=parts.find(p=>/\d{4,}/.test(p));
+        if(!alt) return null;
+        cert=alt; card=parts.filter(p=>p!==alt).join(" ");
+      }
+      return {cert:cert, card:card};
+    }).filter(Boolean);
+  }
+
+  /* Taking slabs OUT — the counterpart to loading them in.
+     Works at any point in the safe's life, including after it's sealed,
+     because slabs legitimately leave for reasons that aren't a sale.
+     Every pull carries a reason so the return scan doesn't call it missing. */
+  function openPull(safeId, backTo){
+    const def=safeDef(safeId), s=safes[safeId]||{};
+    const sealed = s.status==="sealed"||s.status==="deployed"||s.status==="transit";
+    const list=certKeysOf(safeId).map(k=>Object.assign({k:k},contentsOf(safeId)[k]))
+      .sort((a,b)=>String(a.cert).localeCompare(String(b.cert)));
+    const sel={};
+    let reason="";
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Take slabs out of "+esc(def.name)));
+      sh.appendChild(el("p","lede","Scan or tap the slabs coming out, then say why. If a slab is going into a different safe, use Move slabs instead — that keeps it tracked."));
+
+      if(sealed){
+        const w=el("div","expect");
+        w.innerHTML="<b>This safe is sealed.</b> Pulling a slab changes the sealed list. That's allowed — it just gets logged with your name so the return scan still adds up.";
+        sh.appendChild(w);
+      }
+      if(!list.length){ sh.appendChild(el("div","empty","Nothing in this safe to take out.")); }
+
+      const feedback=el("div","expect");
+      feedback.innerHTML="Nothing selected yet.";
+
+      scanField(sh,"Scan to select","Scanning a cert ticks it in the list below.",v=>{
+        const k=certKey(v);
+        if(!contentsOf(safeId)[k]){
+          feedback.innerHTML="<b style='color:#FF5236'>"+esc(certShow(v))+"</b> isn't in this safe.";
+          buzz(60); return;
+        }
+        sel[k]=1;
+        const row=rows.querySelector('[data-k="'+k+'"]');
+        if(row) row.classList.add("on");
+        feedback.innerHTML="<b style='color:#3FD8DE'>"+esc(certShow(v))+"</b> selected.";
+        paintGo(); buzz();
+      });
+      sh.appendChild(feedback);
+
+      sh.appendChild(el("div","sh","Why are they coming out?"));
+      const rbox=el("div","note");
+      const rwrap=el("div","tags");
+      PULL_REASONS.forEach(rz=>{
+        const b=el("button","ntag",esc(rz));
+        b.onclick=()=>{
+          reason=(reason===rz)?"":rz;
+          rwrap.querySelectorAll(".ntag").forEach(x=>x.classList.remove("on"));
+          if(reason) b.classList.add("on");
+          paintGo();
+        };
+        rwrap.appendChild(b);
+      });
+      rbox.appendChild(rwrap);
+      sh.appendChild(rbox);
+
+      sh.appendChild(el("div","sh","In this safe ("+list.length+")"));
+      const rows=el("div");
+      list.slice(0,300).forEach(c=>{
+        const r=selRow(c,()=>{
+          if(sel[c.k]) delete sel[c.k]; else sel[c.k]=1;
+          r.classList.toggle("on"); paintGo();
+        });
+        r.dataset.k=c.k;
+        rows.appendChild(r);
+      });
+      sh.appendChild(rows);
+
+      const go=el("button","btn btn-hot","TAKE THEM OUT");
+      const paintGo=()=>{
+        const n=Object.keys(sel).length;
+        const ready = n>0 && !!reason;
+        go.textContent = !n ? "TAKE THEM OUT"
+          : (!reason ? "PICK A REASON FIRST" : "TAKE "+n+" SLAB"+(n===1?"":"S")+" OUT");
+        go.style.opacity = ready?1:.4;
+      };
+      go.onclick=()=>{
+        const keys=Object.keys(sel);
+        if(!keys.length||!reason) return;
+        const now=Date.now(), upd={}, archive={}, sheetRows=[];
+        keys.forEach(k=>{
+          const c=contentsOf(safeId)[k]||{};
+          archive[k]={cert:certShow(c.cert||k),card:c.card||"",safe:safeId,
+                      pulledBy:me,pulledAt:now,reason:reason};
+          sheetRows.push({
+            "Cert": certShow(c.cert||k),
+            "Card": c.card||"",
+            "Safe": def.name,
+            "Taken out": new Date(now).toLocaleString(),
+            "Reason": reason,
+            "By": me
+          });
+          upd[k]=null;
+        });
+        db.ref(DB_PATH+"/contents/"+safeId).update(upd);
+        db.ref(DB_PATH+"/pulled").update(archive);
+        postSheet({tab:"Taken out by hand", mode:"append", rows:sheetRows});
+        logEvent({type:"pull",safe:safeId,count:keys.length,note:reason});
+        buzz(60);
+        if(backTo==="load") openLoad(safeId); else closeSheet();
+      };
+      paintGo();
+      sh.appendChild(go);
+      const back=el("button","btn btn-q","Back");
+      back.onclick=()=>{ if(backTo==="load") openLoad(safeId); else closeSheet(); };
+      sh.appendChild(back);
+    });
+  }
+  function selRow(c,fn){
+    const r=el("button","selrow");
+    const box=el("div","selbox","✓");
+    const m=el("div","sm");
+    m.appendChild(el("div","sc",esc(certShow(c.cert))));
+    if(c.card) m.appendChild(el("div","sn",esc(c.card)));
+    r.appendChild(box); r.appendChild(m);
+    r.onclick=fn;
+    return r;
+  }
+
+  /* Raw cards go in as a named lot with a quantity. There's nothing to scan,
+     so the honest thing is to track them by count and say so, rather than
+     pretending each one has an identity it doesn't have. */
+  function openLot(safeId){
+    const def=safeDef(safeId);
+    const existing=lotKeysOf(safeId).map(k=>Object.assign({k:k},contentsOf(safeId)[k]));
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Raw cards in "+esc(def.name)));
+      sh.appendChild(el("p","lede","Raw cards have no cert to scan, so they go in as a lot — a name and a count. At re-scan you count them back instead of scanning."));
+
+      const w=el("div","scanwrap");
+      w.appendChild(el("div","l","What is it"));
+      const nm=el("input","scaninput");
+      nm.placeholder="Japanese base commons";
+      nm.style.fontFamily="'Atkinson Hyperlegible',sans-serif";
+      nm.style.fontSize="17px"; nm.style.letterSpacing="0";
+      nm.autocomplete="off";
+      w.appendChild(nm);
+      const qw=el("div"); qw.style.marginTop="12px";
+      qw.appendChild(el("div","l","How many"));
+      const qty=el("input","scaninput");
+      qty.type="number"; qty.inputMode="numeric"; qty.min="1"; qty.placeholder="40";
+      qw.appendChild(qty);
+      w.appendChild(qw);
+      sh.appendChild(w);
+
+      const out=el("div","expect");
+      out.innerHTML=existing.length
+        ? "<b>"+existing.length+" lot"+(existing.length===1?"":"s")+"</b> already in this safe, "+
+          rawCountOf(safeId)+" cards total."
+        : "No raw lots in this safe yet.";
+      sh.appendChild(out);
+
+      const go=el("button","btn btn-go","ADD THIS LOT");
+      go.onclick=()=>{
+        const name=nm.value.trim(), n=parseInt(qty.value,10);
+        if(!name||!n||n<1){ out.innerHTML="<b style='color:#FF5236'>Needs a name and a count.</b>"; return; }
+        const k="LOT"+Date.now().toString(36).toUpperCase();
+        db.ref(DB_PATH+"/contents/"+safeId+"/"+k).set({
+          kind:"lot", name:name, qty:n, addedBy:me, addedAt:Date.now()
+        });
+        logEvent({type:"lotadd",safe:safeId,count:n,note:name});
+        buzz();
+        nm.value=""; qty.value="";
+        out.innerHTML="<b style='color:#3FD8DE'>Added "+n+" × "+esc(name)+".</b>";
+      };
+      sh.appendChild(go);
+
+      if(existing.length){
+        sh.appendChild(el("div","sh","Lots in this safe"));
+        existing.forEach(L=>{
+          const r=el("button","selrow");
+          const m=el("div","sm");
+          m.appendChild(el("div","sc",esc(String(L.qty))+" × "+esc(L.name||"Unnamed lot")));
+          m.appendChild(el("div","sn","Added "+dayOf(L.addedAt)+" by "+esc(L.addedBy||"—")+" · tap to remove"));
+          r.appendChild(m);
+          r.onclick=()=>{
+            db.ref(DB_PATH+"/contents/"+safeId+"/"+L.k).remove();
+            logEvent({type:"lotremove",safe:safeId,count:L.qty,note:L.name||""});
+            buzz(); openLot(safeId);
+          };
+          sh.appendChild(r);
+        });
+      }
+      const back=el("button","btn btn-q","Back");
+      back.onclick=()=>openLoad(safeId);
+      sh.appendChild(back);
+    });
+  }
+
+  /* ---------- seal ---------- */
+  function openSeal(safeId){
+    const def=safeDef(safeId), n=countOf(safeId);
+    let note="";
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Seal "+esc(def.name)));
+      sh.appendChild(el("p","lede","This locks the manifest. When the safe comes back, anything missing from this list counts as sold."));
+      const box=el("div","good");
+      box.innerHTML="<h3>"+n+" slabs"+(rawCountOf(safeId)?" + "+rawCountOf(safeId)+" raw":"")+
+        "</h3><p>Count them physically one more time before you seal. After this, adding a slab needs an unseal and it gets logged.</p>";
+      sh.appendChild(box);
+      noteBox(sh,v=>{note=v;});
+      const go=el("button","btn btn-warn","SEAL IT");
+      go.onclick=()=>{
+        if(!n) return;
+        const now=Date.now();
+        const snap={};
+        Object.keys(contentsOf(safeId)).forEach(k=>{ snap[k]=contentsOf(safeId)[k]; });
+        const sealRef=db.ref(DB_PATH+"/seals").push();
+        sealRef.set({safe:safeId,sealedBy:me,sealedAt:now,count:n,certs:snap,note:note||""});
+        db.ref(DB_PATH+"/safes/"+safeId).update({
+          status:"sealed",sealedBy:me,sealedAt:now,sealId:sealRef.key
+        });
+        logEvent({type:"seal",safe:safeId,count:n,from:safes[safeId].location,note:note||""});
+        buzz(); closeSheet();
+      };
+      sh.appendChild(go);
+      const back=el("button","btn btn-q","Not yet"); back.onclick=closeSheet; sh.appendChild(back);
+    });
+  }
+
+  function openUnseal(safeId){
+    const def=safeDef(safeId);
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Unseal "+esc(def.name)+"?"));
+      sh.appendChild(el("p","lede","The manifest reopens so you can add or pull slabs. This gets logged with your name — it's fine to do, just not silently."));
+      const yes=el("button","btn btn-hot","Unseal it");
+      yes.onclick=()=>{
+        db.ref(DB_PATH+"/safes/"+safeId).update({status:"loading",sealId:null,sealedAt:null,sealedBy:null});
+        logEvent({type:"unseal",safe:safeId,count:countOf(safeId)});
+        buzz(); closeSheet();
+      };
+      sh.appendChild(yes);
+      const no=el("button","btn btn-q","Keep it sealed"); no.onclick=closeSheet; sh.appendChild(no);
+    });
+  }
+
+  /* ---------- deploy ---------- */
+  function openDeploy(safeId){
+    const s=safes[safeId], def=safeDef(safeId);
+    const rooms=roomList();
+    let dest=rooms[0]||"", note="";
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Send "+esc(def.name)));
+      sh.appendChild(el("p","lede","The safe travels locked with "+countOf(safeId)+
+        " slabs. Nobody needs to sign for it at the other end — someone just taps arrived."));
+      sh.appendChild(el("div","sh","Going to"));
+      const chips=el("div","chips");
+      rooms.forEach(L=>{
+        const c=el("button","chip"+(L===dest?" on":""),esc(L));
+        c.onclick=()=>{ dest=L; chips.querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); c.classList.add("on"); };
+        chips.appendChild(c);
+      });
+      sh.appendChild(chips);
+      noteBox(sh,v=>{note=v;});
+      const go=el("button","btn btn-go","SEND IT");
+      go.onclick=()=>{
+        if(!dest) return;
+        const ref=db.ref(DB_PATH+"/transfers").push(), now=Date.now();
+        ref.set({safe:safeId,from:s.location,to:dest,sentBy:me,sentAt:now,
+                 countOut:countOf(safeId),note:note||"",status:"transit",kind:"deploy"});
+        db.ref(DB_PATH+"/safes/"+safeId).update({status:"transit",transferId:ref.key});
+        logEvent({type:"deploy",safe:safeId,to:dest,count:countOf(safeId),note:note||""});
+        buzz(); closeSheet();
+      };
+      sh.appendChild(go);
+      const back=el("button","btn btn-q","Back"); back.onclick=closeSheet; sh.appendChild(back);
+    });
+  }
+
+  function markArrived(safeId){
+    const s=safes[safeId], t=transfers[s.transferId];
+    if(!t) return;
+    const now=Date.now();
+    const returning = isBase(t.to);
+    db.ref(DB_PATH+"/transfers/"+s.transferId).update({
+      receivedBy:me,receivedAt:now,status:"done"
+    });
+    db.ref(DB_PATH+"/safes/"+safeId).update({
+      status: returning?"returned":"deployed",
+      location:t.to, transferId:null
+    });
+    logEvent({type:returning?"returned":"arrive",safe:safeId,to:t.to,
+      count:countOf(safeId),minutes:Math.round((now-t.sentAt)/60000)});
+    buzz(); closeSheet();
+  }
+
+  function cancelMove(safeId){
+    const s=safes[safeId], def=safeDef(safeId), t=transfers[s.transferId];
+    if(!t) return;
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Cancel this move?"));
+      sh.appendChild(el("p","lede","Only if the safe never actually left. "+esc(def.name)+
+        " goes back to "+esc(t.from)+" and the move is voided in the log."));
+      const yes=el("button","btn btn-hot","Yes, the safe never left");
+      yes.onclick=()=>{
+        db.ref(DB_PATH+"/transfers/"+s.transferId).update({status:"void",voidedBy:me,voidedAt:Date.now()});
+        db.ref(DB_PATH+"/safes/"+safeId).update({
+          status: t.kind==="return"?"deployed":"sealed", location:t.from, transferId:null
+        });
+        logEvent({type:"void",safe:safeId});
+        buzz(); closeSheet();
+      };
+      sh.appendChild(yes);
+      const no=el("button","btn btn-q","Keep the move"); no.onclick=closeSheet; sh.appendChild(no);
+    });
+  }
+
+  /* ---------- slab-level move between safes ---------- */
+  function openSlabMove(fromId){
+    const def=safeDef(fromId);
+    const others=SAFES().filter(d=>d.id!==fromId);
+    const list=certKeysOf(fromId).map(k=>Object.assign({k:k},contentsOf(fromId)[k]))
+      .sort((a,b)=>String(a.cert).localeCompare(String(b.cert)));
+    const sel={};
+    let dest=others.length?others[0].id:"";
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Move slabs out of "+esc(def.name)));
+      sh.appendChild(el("p","lede","Use this whenever a slab goes to a different room mid-shift. If you skip it, the return scan will call that slab sold and the numbers won't line up."));
+
+      sh.appendChild(el("div","sh","Moving into"));
+      const chips=el("div","chips");
+      others.forEach(d=>{
+        const c=el("button","chip"+(d.id===dest?" on":""),esc(d.name));
+        c.onclick=()=>{ dest=d.id; chips.querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); c.classList.add("on"); };
+        chips.appendChild(c);
+      });
+      sh.appendChild(chips);
+
+      sh.appendChild(el("div","sh","Which slabs"));
+      const scan=scanField(sh,"Scan to select","Scanning a cert ticks it below.",v=>{
+        const k=certKey(v);
+        if(!contentsOf(fromId)[k]){
+          feedback.innerHTML="<b style='color:#FF6B57'>"+esc(certShow(v))+"</b> isn't in this safe.";
+          buzz(60); return;
+        }
+        sel[k]=1;
+        const row=rows.querySelector('[data-k="'+k+'"]');
+        if(row) row.classList.add("on");
+        feedback.innerHTML="<b style='color:#3ECF8E'>"+esc(certShow(v))+"</b> selected.";
+        paintGo(); buzz();
+      });
+      void scan;
+      const feedback=el("div","expect"); feedback.innerHTML="Scan or tap the slabs you're moving.";
+      sh.appendChild(feedback);
+
+      const rows=el("div");
+      list.slice(0,300).forEach(c=>{
+        const r=selRow(c,()=>{ if(sel[c.k]) delete sel[c.k]; else sel[c.k]=1; r.classList.toggle("on"); paintGo(); });
+        r.dataset.k=c.k;
+        rows.appendChild(r);
+      });
+      sh.appendChild(rows);
+
+      const go=el("button","btn btn-warn","MOVE SELECTED");
+      const paintGo=()=>{
+        const n=Object.keys(sel).length;
+        go.textContent=n?"MOVE "+n+" SLAB"+(n===1?"":"S")+" TO "+esc(safeDef(dest).name):"MOVE SELECTED";
+        go.style.opacity=n?1:.4;
+      };
+      go.onclick=()=>{
+        const keys=Object.keys(sel); if(!keys.length||!dest) return;
+        const addTo={}, rmFrom={}, now=Date.now();
+        keys.forEach(k=>{
+          const c=contentsOf(fromId)[k];
+          addTo[k]=Object.assign({},c,{movedFrom:fromId,movedAt:now,movedBy:me});
+          rmFrom[k]=null;
+        });
+        db.ref(DB_PATH+"/contents/"+dest).update(addTo);
+        db.ref(DB_PATH+"/contents/"+fromId).update(rmFrom);
+        const mv=db.ref(DB_PATH+"/slabmoves").push();
+        mv.set({fromSafe:fromId,toSafe:dest,by:me,at:now,count:keys.length,
+                certs:keys.map(k=>certShow((contentsOf(fromId)[k]||{}).cert||k))});
+        logEvent({type:"slabmove",safe:fromId,toSafe:dest,count:keys.length});
+        buzz(); closeSheet();
+      };
+      paintGo();
+      sh.appendChild(go);
+      const back=el("button","btn btn-q","Back"); back.onclick=closeSheet; sh.appendChild(back);
+    });
+  }
+
+  /* ---------- send back ---------- */
+  function openReturn(safeId){
+    const s=safes[safeId], def=safeDef(safeId);
+    let note="";
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Send "+esc(def.name)+" back to "+esc(baseRoom())));
+      sh.appendChild(el("p","lede","Don't count anything now. The real count happens at the "+esc(baseRoom())+" re-scan — that's what tells us what sold."));
+      const box=el("div","expect");
+      box.innerHTML="Sealed with <b>"+(s.sealCount||countOf(safeId))+
+        "</b> slabs. Whatever's left gets scanned when it lands.";
+      sh.appendChild(box);
+      noteBox(sh,v=>{note=v;});
+      const go=el("button","btn btn-go","SEND BACK TO "+esc(baseRoom()));
+      go.onclick=()=>{
+        const ref=db.ref(DB_PATH+"/transfers").push(), now=Date.now();
+        ref.set({safe:safeId,from:s.location,to:baseRoom(),sentBy:me,sentAt:now,
+                 countOut:countOf(safeId),note:note||"",status:"transit",kind:"return"});
+        db.ref(DB_PATH+"/safes/"+safeId).update({status:"transit",transferId:ref.key});
+        logEvent({type:"return",safe:safeId,to:baseRoom(),count:countOf(safeId),note:note||""});
+        buzz(); closeSheet();
+      };
+      sh.appendChild(go);
+      const back=el("button","btn btn-q","Back"); back.onclick=closeSheet; sh.appendChild(back);
+    });
+  }
+
+  /* ---------- re-scan ---------- */
+  function openRescan(safeId){
+    const def=safeDef(safeId);
+    const expected=certKeysOf(safeId);
+    const lots=lotKeysOf(safeId).map(k=>Object.assign({k:k},contentsOf(safeId)[k]));
+    const lotBack={};
+    const seen={};
+    const unexpected=[];
+
+    if(safes[safeId].status!=="rescan"){
+      db.ref(DB_PATH+"/safes/"+safeId).update({status:"rescan"});
+      logEvent({type:"rescan",safe:safeId,count:expected.length});
+    }
+
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Re-scan "+esc(def.name)));
+      sh.appendChild(el("p","lede","Scan every slab still physically in the safe. Anything you don't scan is treated as sold."));
+
+      const tally=el("div","tally");
+      sh.appendChild(tally);
+      const prog=el("div","prog"); prog.innerHTML="<i></i>";
+      sh.appendChild(prog);
+      const feedback=el("div","expect"); feedback.innerHTML="<b>Ready.</b> Scan the first slab.";
+      sh.appendChild(feedback);
+
+      const draw=()=>{
+        const found=Object.keys(seen).length;
+        const missing=expected.length-found;
+        tally.innerHTML='<div class="tal good"><div class="n mono">'+found+
+          '</div><div class="l">STILL HERE</div></div>'+
+          '<div class="tal gone"><div class="n mono">'+missing+
+          '</div><div class="l">GONE (SOLD?)</div></div>'+
+          '<div class="tal'+(unexpected.length?" bad":"")+'"><div class="n mono">'+unexpected.length+
+          '</div><div class="l">NOT ON LIST</div></div>';
+        const bar=prog.querySelector("i");
+        if(bar) bar.style.width = expected.length ? (found/expected.length*100)+"%" : "0%";
+        rows.querySelectorAll("[data-k]").forEach(r=>{
+          r.classList.toggle("on", !!seen[r.dataset.k]);
+        });
+      };
+
+      scanField(sh,"Scan what's in the safe","Every slab you pull out and scan is one that didn't sell.",v=>{
+        const k=certKey(v); if(!k) return;
+        if(seen[k]){ feedback.innerHTML="<b>"+esc(certShow(v))+"</b> already scanned."; buzz(); return; }
+        if(!contentsOf(safeId)[k]){
+          unexpected.push(certShow(v)); draw();
+          feedback.innerHTML="<b style='color:#FF6B57'>"+esc(certShow(v))+
+            "</b> wasn't on this safe's manifest. Set it aside and tell Hen — don't just add it.";
+          buzz(60); return;
+        }
+        seen[k]=1; draw();
+        feedback.innerHTML="<b style='color:#3ECF8E'>"+esc(certShow(v))+"</b> still here.";
+        buzz();
+      });
+
+      /* Raw lots get counted back, not scanned — there's nothing to scan. */
+      if(lots.length){
+        sh.appendChild(el("div","sh","Count the raw cards back"));
+        lots.forEach(L=>{
+          lotBack[L.k]=null;
+          const box=el("div","lotrow");
+          const lbl=el("div","lot-m");
+          lbl.appendChild(el("div","lot-n",esc(L.name||"Unnamed lot")));
+          lbl.appendChild(el("div","lot-s","Went out with "+esc(String(L.qty))));
+          box.appendChild(lbl);
+          const inp=el("input","lot-q");
+          inp.type="number"; inp.inputMode="numeric"; inp.min="0"; inp.placeholder="?";
+          inp.oninput=()=>{
+            const v=inp.value===""?null:Math.max(0,parseInt(inp.value,10)||0);
+            lotBack[L.k]=v;
+            inp.classList.toggle("short", v!==null && v<Number(L.qty||0));
+          };
+          box.appendChild(inp);
+          sh.appendChild(box);
+        });
+      }
+
+      const rows=el("div");
+      sh.appendChild(el("div","sh","Expected in this safe"));
+      expected.map(k=>Object.assign({k:k},contentsOf(safeId)[k]))
+        .sort((a,b)=>String(a.cert).localeCompare(String(b.cert)))
+        .slice(0,400)
+        .forEach(c=>{
+          const r=selRow(c,()=>{
+            if(seen[c.k]) delete seen[c.k]; else seen[c.k]=1;
+            draw();
+          });
+          r.dataset.k=c.k;
+          rows.appendChild(r);
+        });
+      sh.appendChild(rows);
+
+      const go=el("button","btn btn-hot","FINISH — SHOW ME WHAT SOLD");
+      go.onclick=()=>{
+        const found=Object.keys(seen);
+        const missing=expected.filter(k=>!seen[k]);
+        const rawOut=lots.map(L=>{
+          const back=lotBack[L.k];
+          return {k:L.k,name:L.name||"Unnamed lot",sent:Number(L.qty||0),
+                  back:back===null||back===undefined?null:back};
+        });
+        openSoldReview(safeId,found,missing,unexpected,rawOut);
+      };
+      sh.appendChild(go);
+      const back=el("button","btn btn-q","Pause — come back to this");
+      back.onclick=closeSheet;
+      sh.appendChild(back);
+      draw();
+    });
+  }
+
+  /* ---------- sold review + reconcile ---------- */
+  function openSoldReview(safeId,foundKeys,missingKeys,unexpected,rawOut){
+    const def=safeDef(safeId);
+    const missing=missingKeys.map(k=>Object.assign({k:k},contentsOf(safeId)[k]));
+    let soldText="";
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","What left "+esc(def.name)));
+      sh.appendChild(el("p","lede",missing.length+" slab"+(missing.length===1?"":"s")+
+        " came out of this safe. Paste the sold list and we'll check every one of them off."));
+
+      const box=el("div",missing.length?"expect":"good");
+      if(missing.length){
+        box.innerHTML="<b>"+missing.length+" gone</b> · <b>"+foundKeys.length+"</b> still in the safe"+
+          (unexpected.length?" · <span style='color:#FF6B57'>"+unexpected.length+" not on the manifest</span>":"");
+      } else {
+        box.innerHTML="<h3>Nothing left the safe</h3><p>Every slab on the manifest is still inside. Nothing to reconcile.</p>";
+      }
+      sh.appendChild(box);
+
+      sh.appendChild(el("div","sh","Sold list"));
+      sh.appendChild(el("p","lede","Paste cert numbers from the tracker sheet, or drop in a CSV export. One per line, or comma separated — extra columns are ignored."));
+      const ta=el("textarea","ta");
+      ta.placeholder="1234567\n1234568, sold 42.00\n1234569";
+      ta.oninput=()=>{ soldText=ta.value; };
+      sh.appendChild(ta);
+
+      const fileWrap=el("div","minibtns");
+      const fileBtn=el("label","minibtn","Upload a CSV");
+      const fi=el("input"); fi.type="file"; fi.accept=".csv,.txt,.tsv"; fi.style.display="none";
+      fi.onchange=()=>{
+        const f=fi.files&&fi.files[0]; if(!f) return;
+        const r=new FileReader();
+        r.onload=()=>{ ta.value=String(r.result||""); soldText=ta.value; };
+        r.readAsText(f);
+      };
+      fileBtn.appendChild(fi);
+      const skipBtn=el("button","minibtn","Skip — no list yet");
+      skipBtn.onclick=()=>finish(safeId,foundKeys,missing,unexpected,[],missing.map(m=>m.k),rawOut);
+      fileWrap.appendChild(fileBtn); fileWrap.appendChild(skipBtn);
+      sh.appendChild(fileWrap);
+
+      const go=el("button","btn btn-go","CHECK THE LIST");
+      go.onclick=()=>{
+        const soldKeys={};
+        parseList(soldText).forEach(p=>{ const k=certKey(p.cert); if(k) soldKeys[k]=1; });
+        const matched=missing.filter(m=>soldKeys[m.k]).map(m=>m.k);
+        const unmatched=missing.filter(m=>!soldKeys[m.k]).map(m=>m.k);
+        const ghost=Object.keys(soldKeys).filter(k=>missingKeys.indexOf(k)<0);
+        showMatch(safeId,foundKeys,missing,unexpected,matched,unmatched,ghost,rawOut);
+      };
+      sh.appendChild(go);
+    });
+  }
+
+  function showMatch(safeId,foundKeys,missing,unexpected,matched,unmatched,ghost,rawOut){
+    const def=safeDef(safeId);
+    openSheet(sh=>{
+      sh.appendChild(el("h2","",unmatched.length?"Some slabs don't add up.":"Everything matches."));
+      const tal=el("div","tally");
+      tal.innerHTML='<div class="tal good"><div class="n mono">'+matched.length+
+        '</div><div class="l">SOLD, CONFIRMED</div></div>'+
+        '<div class="tal'+(unmatched.length?" bad":"")+'"><div class="n mono">'+unmatched.length+
+        '</div><div class="l">GONE, NOT SOLD</div></div>'+
+        '<div class="tal"><div class="n mono">'+foundKeys.length+
+        '</div><div class="l">STILL IN SAFE</div></div>';
+      sh.appendChild(tal);
+
+      if(unmatched.length){
+        const a=el("div","alarm");
+        const names=unmatched.map(k=>{
+          const m=missing.find(x=>x.k===k);
+          return certShow(m?m.cert:k);
+        });
+        a.innerHTML="<h3>"+unmatched.length+" unaccounted for</h3><p>These left the safe but aren't on the sold list. Check the room, check for an unlogged transfer, then tell Hen and Winston this shift — not tomorrow.</p><p class='mono' style='margin-top:10px;font-size:13px'>"+
+          esc(names.slice(0,25).join("  ·  "))+(names.length>25?" …":"")+"</p>";
+        sh.appendChild(a);
+      } else {
+        const g=el("div","good");
+        g.innerHTML="<h3>Clean</h3><p>Every slab that left the safe is on the sold list. Nothing to chase.</p>";
+        sh.appendChild(g);
+      }
+
+      const rawGone=(rawOut||[]).filter(L=>L.back!==null&&L.back<L.sent);
+      const rawUncounted=(rawOut||[]).filter(L=>L.back===null);
+      if(rawGone.length){
+        const w=el("div","expect");
+        w.innerHTML="<b>Raw cards:</b> "+rawGone.map(L=>
+          esc(L.name)+" went out with "+L.sent+", came back with "+L.back+
+          " (<b>"+(L.sent-L.back)+"</b> gone)").join("<br>");
+        sh.appendChild(w);
+      }
+      if(rawUncounted.length){
+        const w=el("div","expect");
+        w.innerHTML="<b style='color:#FFB020'>"+rawUncounted.length+" raw lot"+
+          (rawUncounted.length===1?" wasn't":"s weren't")+" counted back.</b> "+
+          "Those stay in the safe at their original count.";
+        sh.appendChild(w);
+      }
+      if(ghost.length){
+        const w=el("div","expect");
+        w.innerHTML="<b>"+ghost.length+"</b> cert"+(ghost.length===1?" was":"s were")+
+          " on the sold list but never in this safe. Probably from another safe or another day — worth a look.";
+        sh.appendChild(w);
+      }
+      if(unexpected.length){
+        const w=el("div","expect");
+        w.innerHTML="<b style='color:#FF6B57'>"+unexpected.length+"</b> slab"+(unexpected.length===1?"":"s")+
+          " turned up in the safe that were never logged into it: <span class='mono'>"+
+          esc(unexpected.slice(0,10).join(", "))+"</span>";
+        sh.appendChild(w);
+      }
+
+      const go=el("button","btn "+(unmatched.length?"btn-hot":"btn-go"),
+        unmatched.length?"LOG IT ANYWAY — I'VE REPORTED IT":"LOG IT AND CLEAR THE SAFE");
+      go.onclick=()=>finish(safeId,foundKeys,missing,unexpected,matched,unmatched,rawOut);
+      sh.appendChild(go);
+      const back=el("button","btn btn-q","Back — let me re-check");
+      back.onclick=()=>openRescan(safeId);
+      sh.appendChild(back);
+      void def;
+    });
+  }
+
+  /* ---------- leftovers decision + commit ---------- */
+  function finish(safeId,foundKeys,missing,unexpected,matched,unmatched,rawOut){
+    const def=safeDef(safeId);
+    if(!foundKeys.length){ commitRecon(safeId,foundKeys,missing,unexpected,matched,unmatched,"none",rawOut); return; }
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","What about the "+foundKeys.length+" left over?"));
+      sh.appendChild(el("p","lede","These didn't sell. Your call what happens to them."));
+      const a=el("button","arow");
+      a.innerHTML="<div><div class='t'>Keep them in "+esc(def.name)+"</div><div class='d'>Safe gets topped up and re-sealed for the next run.</div></div>";
+      a.onclick=()=>commitRecon(safeId,foundKeys,missing,unexpected,matched,unmatched,"keep",rawOut);
+      sh.appendChild(a);
+      const b=el("button","arow");
+      b.innerHTML="<div><div class='t'>Pull them back to the warehouse pool</div><div class='d'>Safe empties out. Slabs go back on the shelf to be re-picked.</div></div>";
+      b.onclick=()=>commitRecon(safeId,foundKeys,missing,unexpected,matched,unmatched,"pool",rawOut);
+      sh.appendChild(b);
+      const c=el("button","btn btn-q","Back"); c.onclick=()=>openRescan(safeId); sh.appendChild(c);
+    });
+  }
+
+  function commitRecon(safeId,foundKeys,missing,unexpected,matched,unmatched,leftovers,rawOut){
+    const now=Date.now();
+    const missingKeys=missing.map(m=>m.k);
+    /* Work out the raw shortfall up front — the recon record needs it, and a
+       lot nobody counted back is left alone rather than assumed sold. */
+    let rawSold=0;
+    (rawOut||[]).forEach(L=>{
+      if(L.back===null||L.back===undefined) return;
+      rawSold += Math.max(0, Number(L.sent||0) - Number(L.back||0));
+    });
+    const rec=db.ref(DB_PATH+"/recons").push();
+    rec.set({
+      safe:safeId, at:now, by:me,
+      sealId:(safes[safeId]||{}).sealId||"",
+      expected:missingKeys.length+foundKeys.length,
+      stillHere:foundKeys.length,
+      gone:missingKeys.length,
+      soldConfirmed:matched.length,
+      unmatched:unmatched.length,
+      unmatchedCerts:unmatched.map(k=>{
+        const m=missing.find(x=>x.k===k); return certShow(m?m.cert:k);
+      }),
+      unexpectedCerts:unexpected,
+      rawSold:rawSold,
+      leftovers:leftovers
+    });
+
+    /* remove everything that left the safe */
+    const upd={};
+    missingKeys.forEach(k=>{ upd[k]=null; });
+    if(leftovers==="pool") foundKeys.forEach(k=>{ upd[k]=null; });
+
+    /* raw lots settle to whatever was counted back; an emptied lot drops out */
+    (rawOut||[]).forEach(L=>{
+      if(L.back===null||L.back===undefined) return;
+      if(leftovers==="pool" || L.back===0) upd[L.k]=null;
+      else db.ref(DB_PATH+"/contents/"+safeId+"/"+L.k+"/qty").set(L.back);
+    });
+    if(Object.keys(upd).length) db.ref(DB_PATH+"/contents/"+safeId).update(upd);
+
+    /* archive what sold so it's queryable later */
+    if(missingKeys.length){
+      const soldUpd={}, sheetRows=[];
+      missing.forEach(m=>{
+        const confirmed = matched.indexOf(m.k)>=0;
+        soldUpd[m.k]={cert:certShow(m.cert),card:m.card||"",safe:safeId,
+          leftAt:now,confirmed:confirmed?1:0,reconId:rec.key};
+        sheetRows.push({
+          "Cert": certShow(m.cert),
+          "Card": m.card||"",
+          "Safe": safeDef(safeId).name,
+          "Left the safe": new Date(now).toLocaleString(),
+          "On sold list": confirmed?"YES":"NO — CHASE THIS",
+          "Checked by": me
+        });
+      });
+      db.ref(DB_PATH+"/sold").update(soldUpd);
+      if(sheetRows.length) postSheet({tab:"Slabs out", mode:"append", rows:sheetRows});
+    }
+
+    db.ref(DB_PATH+"/safes/"+safeId).update({
+      status: (leftovers==="keep"&&foundKeys.length)?"loading":"idle",
+      sealId:null, sealedAt:null, sealedBy:null
+    });
+
+    logEvent({type:"reconcile",safe:safeId,sold:missingKeys.length,
+      confirmed:matched.length,unmatched:unmatched.length,
+      stillHere:foundKeys.length,leftovers:leftovers,
+      note:rawSold?(rawSold+" raw cards also left"):""});
+
+    buzz(80); closeSheet();
+  }
+
+  /* ---------- find a card ---------- */
+  /* The question is always "where is this card". A search that only looks
+     inside safes answers that half the time — the other half the card already
+     left, and "not found" is the least useful possible answer. So this looks
+     at what's in safes now, what sold, and what was pulled by hand, and always
+     comes back with a story. */
+  function lookupCert(raw){
+    const k=certKey(raw);
+    if(!k) return null;
+    let hit=null;
+    SAFES().forEach(d=>{
+      if(hit) return;
+      const c=contentsOf(d.id)[k];
+      if(c) hit={state:"in",cert:certShow(c.cert),card:c.card||"",safe:d,
+                 at:c.addedAt,by:c.addedBy};
+    });
+    if(hit) return hit;
+    if(sold[k]) return {state:"sold",cert:certShow(sold[k].cert),card:sold[k].card||"",
+      safe:safeDef(sold[k].safe),at:sold[k].leftAt,confirmed:!!sold[k].confirmed};
+    if(pulled[k]) return {state:"pulled",cert:certShow(pulled[k].cert),card:pulled[k].card||"",
+      safe:safeDef(pulled[k].safe),at:pulled[k].pulledAt,by:pulled[k].pulledBy,
+      reason:pulled[k].reason||""};
+    return {state:"unknown",cert:certShow(raw)};
+  }
+
+  /* Work out who graded a slab from the shape of its cert number, so the
+     photo link goes to the right company instead of a dead TAG page. */
+  function gradersFor(cert){
+    const c=certShow(cert).replace(/[^A-Z0-9]/g,"");
+    if(!c) return [];
+    return GRADERS.filter(g=>g.test.test(c)).map(g=>({
+      name:g.name,
+      url: g.url ? g.url.replace("{CERT}", encodeURIComponent(c)) : ""
+    }));
+  }
+  function certUrl(cert){
+    const m=gradersFor(cert).filter(g=>g.url);
+    /* Only link straight through when there's exactly one possible company.
+       Anything ambiguous goes via Find a card, where both are offered. */
+    return m.length===1 ? m[0].url : "";
+  }
+
+  function paintFind(){
+    const host=$("findview"); host.innerHTML="";
+    const back=el("button","back","← Back"); back.onclick=()=>go("board"); host.appendChild(back);
+    host.appendChild(el("div","dtitle","Find a card"));
+    host.appendChild(el("div","dsub","Scan a slab or type its cert number. Works whether it's still in a safe or already gone."));
+
+    const w=el("div","scanwrap");
+    w.appendChild(el("div","l","Cert number"));
+    const i=el("input","scaninput");
+    i.placeholder="Scan or type cert #";
+    i.autocomplete="off"; i.autocapitalize="characters"; i.spellcheck=false;
+    w.appendChild(i);
+    w.appendChild(el("div","scanhint","Every slab in every safe is searchable, plus everything that's left one."));
+    host.appendChild(w);
+
+    const out=el("div");
+    host.appendChild(out);
+
+    const show=(q)=>{
+      out.innerHTML="";
+      if(!certKey(q)){ return; }
+      const r=lookupCert(q);
+      const card=el("div","findcard");
+
+      if(r.state==="in"){
+        card.classList.add("f-in");
+        card.appendChild(el("div","f-l","Found it"));
+        card.appendChild(el("div","f-where",esc(r.safe.name)));
+        card.appendChild(el("div","f-sub","at "+esc((safes[r.safe.id]||{}).location||"—")+
+          " · "+esc(statusLabel(r.safe.id))));
+        if(r.card) card.appendChild(el("div","f-meta",esc(r.card)));
+        card.appendChild(el("div","f-meta","Loaded "+dayOf(r.at)+" by "+esc(r.by||"—")));
+        const b=el("button","btn btn-go","OPEN "+esc(r.safe.name));
+        b.onclick=()=>go("safe",r.safe.id);
+        card.appendChild(b);
+      }
+      else if(r.state==="sold"){
+        card.classList.add(r.confirmed?"f-gone":"f-bad");
+        card.appendChild(el("div","f-l",r.confirmed?"Sold":"Left the safe — never matched a sale"));
+        card.appendChild(el("div","f-where","Not in a safe"));
+        card.appendChild(el("div","f-sub","Left "+esc(r.safe.name)+" on "+dayOf(r.at)));
+        if(r.card) card.appendChild(el("div","f-meta",esc(r.card)));
+        if(!r.confirmed) card.appendChild(el("div","f-meta",
+          "This one was flagged at reconcile and never turned up on a sold list."));
+      }
+      else if(r.state==="pulled"){
+        card.classList.add("f-gone");
+        card.appendChild(el("div","f-l","Taken out by hand"));
+        card.appendChild(el("div","f-where",esc(r.reason||"No reason given")));
+        card.appendChild(el("div","f-sub","Pulled from "+esc(r.safe.name)+" "+dayOf(r.at)+
+          " by "+esc(r.by||"—")));
+        if(r.card) card.appendChild(el("div","f-meta",esc(r.card)));
+      }
+      else {
+        card.classList.add("f-none");
+        card.appendChild(el("div","f-l","No record"));
+        card.appendChild(el("div","f-where",esc(r.cert)));
+        card.appendChild(el("div","f-sub","This cert has never been scanned into any safe. If it's in your hand, it hasn't been logged yet."));
+      }
+
+      if(r.cert){
+        const gs=gradersFor(r.cert).filter(g=>g.url);
+        if(gs.length>1){
+          card.appendChild(el("div","f-meta",
+            "This number could be "+gs.map(g=>g.name).join(" or ")+
+            " — they use the same digit lengths. Check the slab label and pick."));
+        }
+        gs.forEach(g=>{
+          const a=el("a","btn btn-q","See "+esc(g.name)+" photos and grade report");
+          a.href=g.url; a.target="_blank"; a.rel="noopener";
+          card.appendChild(a);
+        });
+        if(!gs.length){
+          card.appendChild(el("div","f-meta",
+            "Not a graded cert we recognise, so there's no photo page to open."));
+        }
+      }
+      out.appendChild(card);
+    };
+
+    let t=null;
+    i.oninput=()=>{ clearTimeout(t); t=setTimeout(()=>show(i.value.trim()),160); };
+    if(findPrefill){ i.value=findPrefill; show(findPrefill); findPrefill=""; }
+    i.addEventListener("keydown",ev=>{
+      if(ev.key==="Enter"){ ev.preventDefault(); show(i.value.trim()); }
+    });
+    setTimeout(()=>{ try{ i.focus(); }catch(e){} },140);
+  }
+
+  /* ---------- QR print view ---------- */
+  function paintQr(){
+    const host=$("qrview"); host.innerHTML="";
+    const back=el("button","back noprint","← Back"); back.onclick=()=>go("board"); host.appendChild(back);
+    host.appendChild(el("h2","","QR labels"));
+    host.appendChild(el("p","lede noprint","Print this, cut them out, tape one to each safe. The code never changes — you only print it once per safe."));
+    const pb=el("button","btn btn-go noprint","PRINT THESE");
+    pb.onclick=()=>window.print();
+    host.appendChild(pb);
+
+    const grid=el("div","qrgrid");
+    SAFES().forEach(d=>{
+      const c=el("div","qrcard");
+      const bar=el("div","qbar"); bar.style.background=d.color||"#333";
+      c.appendChild(bar);
+      const q=el("div"); c.appendChild(q);
+      c.appendChild(el("div","qcode",esc(d.code||codeOf(d.id))));
+      c.appendChild(el("div","qname",esc(d.name)));
+      c.appendChild(el("div","qsub","Scan to see what's inside"));
+      grid.appendChild(c);
+      try{
+        new QRCode(q,{ text:safeUrl(d.id), width:150, height:150,
+          colorDark:"#000000", colorLight:"#ffffff",
+          correctLevel: QRCode.CorrectLevel.M });
+      }catch(e){
+        q.appendChild(el("div","qsub","QR library didn't load — check your connection and refresh."));
+      }
+    });
+    host.appendChild(grid);
+  }
+  function safeUrl(id){
+    return location.origin+location.pathname+"?safe="+encodeURIComponent(id);
+  }
+
+  /* ---------- admin ---------- */
+  function arow(sheet,title,desc,fn,danger){
+    const b=el("button","arow"+(danger?" danger":""));
+    const d=el("div");
+    d.appendChild(el("div","t",title));
+    d.appendChild(el("div","d",desc));
+    b.appendChild(d);
+    b.onclick=fn;
+    sheet.appendChild(b);
+  }
+
+  function openAdmin(){
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Admin"));
+      sh.appendChild(el("p","lede","Only "+ADMINS.join(" and ")+" see this."));
+      arow(sh,"Print QR labels","One code per safe. Print once, tape it on, done.",()=>{ closeSheet(); go("qr"); });
+      arow(sh, SHEET_WEBHOOK?"Resend everything to the sheet":"Google Sheet not connected yet",
+        SHEET_WEBHOOK
+          ? "Rewrites the live contents tab. Use it if the sheet looks out of date."
+          : "Paste your Apps Script URL into SHEET_WEBHOOK at the top of this file.",
+        ()=>{
+          if(!SHEET_WEBHOOK){ return; }
+          pushSnapshot();
+          flushQueue();
+          buzz(); closeSheet();
+        });
+      arow(sh,"Add a safe","New safe arrives — set it up and print its code.",openAddSafe);
+      arow(sh,"Rooms and buildings","Add a room, or move one to a different building.",openRooms);
+      arow(sh,"Export everything","Every slab, every move, every reconcile as CSV.",openExport);
+      arow(sh,"Fix a stuck safe","Force a safe to a location if a move got left open.",openFix);
+      arow(sh,"Clear all test data","Wipes every safe, manifest, and log. Can't be undone.",confirmWipe,true);
+      const back=el("button","btn btn-q","Close"); back.onclick=closeSheet; sh.appendChild(back);
+    });
+  }
+
+  function openAddSafe(){
+    const colors=["#FF5A4D","#4D8DFF","#2FB344","#F0B429","#B45AFF","#00C2CC"];
+    let color=colors[0];
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Add a safe"));
+      sh.appendChild(el("p","lede","Give it the name that's written on the safe itself, so nobody has to translate."));
+      const i=el("input","scaninput"); i.placeholder="TT2 LIVE"; i.autocomplete="off";
+      i.style.textTransform="uppercase";
+      sh.appendChild(i);
+      sh.appendChild(el("div","sh","Colour on the board"));
+      const chips=el("div","chips");
+      colors.forEach(c=>{
+        const b=el("button","chip"+(c===color?" on":""),"");
+        b.style.background=c; b.style.minHeight="48px"; b.style.borderColor=c;
+        b.onclick=()=>{ color=c; chips.querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); };
+        chips.appendChild(b);
+      });
+      sh.appendChild(chips);
+      const go=el("button","btn btn-go","ADD IT");
+      go.onclick=()=>{
+        const name=i.value.trim().toUpperCase();
+        if(!name) return;
+        const id=name.toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,16)||("safe"+Date.now());
+        db.ref(DB_PATH+"/config/safes/"+id).set({name:name,color:color,home:baseRoom(),order:SAFES().length,code:makeCode(SAFES().length)});
+        db.ref(DB_PATH+"/safes/"+id).set({location:baseRoom(),status:"idle"});
+        buzz(); closeSheet(); go2("qr");
+      };
+      sh.appendChild(go);
+      const back=el("button","btn btn-q","Back"); back.onclick=openAdmin; sh.appendChild(back);
+    });
+  }
+  function go2(v){ setTimeout(()=>go(v),150); }
+
+  function openRooms(){
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Rooms and buildings"));
+      sh.appendChild(el("p","lede","A room is a room. The building is just which address it's at — change it when a room physically moves and nothing else breaks."));
+
+      ROOMS().forEach((r,idx)=>{
+        const b=el("button","arow");
+        const d=el("div");
+        d.appendChild(el("div","t",esc(r.name)+(r.base?"  ·  base":"")));
+        d.appendChild(el("div","d",esc(r.building||"No building set")+
+          " — tap to move it to another building"));
+        b.appendChild(d);
+        b.onclick=()=>openMoveRoom(idx);
+        sh.appendChild(b);
+      });
+
+      sh.appendChild(el("div","sh","Add a room"));
+      const w=el("div","scanwrap");
+      w.appendChild(el("div","l","Room name"));
+      const nm=el("input","scaninput");
+      nm.placeholder="TT4"; nm.autocomplete="off"; nm.style.textTransform="uppercase";
+      w.appendChild(nm);
+      const bw=el("div"); bw.style.marginTop="12px";
+      bw.appendChild(el("div","l","Which building"));
+      const bd=el("input","scaninput");
+      bd.placeholder="Store"; bd.autocomplete="off";
+      bd.style.fontFamily="'Atkinson Hyperlegible',sans-serif";
+      bd.style.fontSize="17px"; bd.style.letterSpacing="0";
+      bw.appendChild(bd);
+      w.appendChild(bw);
+      sh.appendChild(w);
+
+      const go=el("button","btn btn-go","ADD ROOM");
+      go.onclick=()=>{
+        const n=nm.value.trim().toUpperCase();
+        if(!n) return;
+        const R=ROOMS().slice();
+        if(R.some(x=>x.name===n)) return;
+        R.push({name:n,building:bd.value.trim()||"Other",base:false});
+        db.ref(DB_PATH+"/config/rooms").set(R);
+        buzz(); openRooms();
+      };
+      sh.appendChild(go);
+      const back=el("button","btn btn-q","Back"); back.onclick=openAdmin; sh.appendChild(back);
+    });
+  }
+
+  /* The remodel case: TT3 moves from the warehouse to the store. One tap,
+     no safes move, no history changes — only the room's address. */
+  function openMoveRoom(idx){
+    const R=ROOMS().slice(), r=R[idx];
+    if(!r) return;
+    const buildings=[];
+    ROOMS().forEach(x=>{ if(x.building && buildings.indexOf(x.building)<0) buildings.push(x.building); });
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Move "+esc(r.name)));
+      sh.appendChild(el("p","lede","Which building is "+esc(r.name)+" in now? Safes stay exactly where they are — this only changes the address."));
+      buildings.forEach(b=>{
+        if(b===r.building) return;
+        const btn=el("button","arow");
+        btn.innerHTML="<div><div class='t'>"+esc(b)+"</div><div class='d'>Move "+
+          esc(r.name)+" from "+esc(r.building||"nowhere")+" to "+esc(b)+"</div></div>";
+        btn.onclick=()=>{
+          R[idx]=Object.assign({},r,{building:b});
+          db.ref(DB_PATH+"/config/rooms").set(R);
+          logEvent({type:"roommove",safe:"",note:r.name+" moved to "+b});
+          buzz(); openRooms();
+        };
+        sh.appendChild(btn);
+      });
+
+      const w=el("div","scanwrap");
+      w.appendChild(el("div","l","Or a new building"));
+      const nb=el("input","scaninput");
+      nb.placeholder="Second store"; nb.autocomplete="off";
+      nb.style.fontFamily="'Atkinson Hyperlegible',sans-serif";
+      nb.style.fontSize="17px"; nb.style.letterSpacing="0";
+      w.appendChild(nb);
+      sh.appendChild(w);
+      const add=el("button","btn btn-go","MOVE IT THERE");
+      add.onclick=()=>{
+        const v=nb.value.trim(); if(!v) return;
+        R[idx]=Object.assign({},r,{building:v});
+        db.ref(DB_PATH+"/config/rooms").set(R);
+        logEvent({type:"roommove",safe:"",note:r.name+" moved to "+v});
+        buzz(); openRooms();
+      };
+      sh.appendChild(add);
+
+      if(!r.base){
+        const mk=el("button","btn btn-q","Make "+esc(r.name)+" the base (load, seal, re-scan here)");
+        mk.onclick=()=>{
+          const R2=ROOMS().map((x,i)=>Object.assign({},x,{base:i===idx}));
+          db.ref(DB_PATH+"/config/rooms").set(R2);
+          buzz(); openRooms();
+        };
+        sh.appendChild(mk);
+      }
+      const back=el("button","btn btn-q","Back"); back.onclick=openRooms; sh.appendChild(back);
+    });
+  }
+
+  function openExport(){
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Export"));
+      sh.appendChild(el("p","lede","Pick what you need. Each one downloads as a CSV you can drop into the tracker sheet."));
+      arow(sh,"Everything in every safe right now","Live manifest — one row per slab, with which safe it's in.",exportContents);
+      arow(sh,"Safe movement log","Every send, arrival, seal, and reconcile.",exportEvents);
+      arow(sh,"Slabs that left a safe","One row per slab that went out, with whether it matched the sold list.",exportSold);
+      arow(sh,"Slabs taken out by hand","Every pull, who did it and the reason they gave.",exportPulled);
+      const back=el("button","btn btn-q","Back"); back.onclick=openAdmin; sh.appendChild(back);
+    });
+  }
+  function download(name,head,rows){
+    const csv=[head].concat(rows).map(r=>r.map(c=>'"'+String(c==null?"":c).replace(/"/g,'""')+'"').join(",")).join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    a.download=name+"-"+new Date().toISOString().slice(0,10)+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    closeSheet();
+  }
+  function exportContents(){
+    const rows=[];
+    SAFES().forEach(d=>{
+      const s=safes[d.id]||{};
+      certKeysOf(d.id).forEach(k=>{
+        const c=contentsOf(d.id)[k];
+        rows.push([certShow(c.cert),c.card||"",d.name,s.location||"",statusLabel(d.id),
+          c.addedBy||"",c.addedAt?new Date(c.addedAt).toLocaleString():""]);
+      });
+    });
+    download("slab-contents",["Cert","Card","Safe","Location","Status","Added by","Added at"],rows);
+  }
+  function exportEvents(){
+    const rows=Object.keys(events).map(k=>events[k]).sort((a,b)=>(a.at||0)-(b.at||0))
+      .map(e=>[e.at?new Date(e.at).toLocaleString():"",safeDef(e.safe).name,e.type||"",
+        e.to||e.toSafe||"",e.count==null?"":e.count,e.sold==null?"":e.sold,
+        e.unmatched==null?"":e.unmatched,e.by||"",e.note||""]);
+    download("slab-log",["When","Safe","Event","To","Count","Sold","Unmatched","By","Note"],rows);
+  }
+  function exportSold(){
+    db.ref(DB_PATH+"/sold").once("value",s=>{
+      const o=s.val()||{};
+      const rows=Object.keys(o).map(k=>o[k]).sort((a,b)=>(a.leftAt||0)-(b.leftAt||0))
+        .map(x=>[certShow(x.cert),x.card||"",safeDef(x.safe).name,
+          x.leftAt?new Date(x.leftAt).toLocaleString():"",x.confirmed?"Matched sold list":"UNMATCHED"]);
+      download("slabs-out",["Cert","Card","Safe","Left at","Sold list check"],rows);
+    });
+  }
+
+  function exportPulled(){
+    db.ref(DB_PATH+"/pulled").once("value",s=>{
+      const o=s.val()||{};
+      const rows=Object.keys(o).map(k=>o[k]).sort((a,b)=>(a.pulledAt||0)-(b.pulledAt||0))
+        .map(x=>[certShow(x.cert),x.card||"",safeDef(x.safe).name,
+          x.pulledAt?new Date(x.pulledAt).toLocaleString():"",x.reason||"",x.pulledBy||""]);
+      download("slabs-pulled",["Cert","Card","Safe","Taken out at","Reason","By"],rows);
+    });
+  }
+
+  function openFix(){
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Fix a stuck safe"));
+      sh.appendChild(el("p","lede","Pick where the safe physically is right now. This closes any open move without touching the manifest."));
+      SAFES().forEach(def=>{
+        LOCATIONS().forEach(L=>{
+          arow(sh, def.name+" is at "+L, "Set it secured at "+L+".", ()=>{
+            const s=safes[def.id]||{};
+            if(s.transferId) db.ref(DB_PATH+"/transfers/"+s.transferId).update({status:"void",voidedBy:me+" (fix)",voidedAt:Date.now()});
+            const st = isBase(L) ? (countOf(def.id)?"returned":"idle") : "deployed";
+            db.ref(DB_PATH+"/safes/"+def.id).update({status:st,location:L,transferId:null});
+            logEvent({type:"fix",safe:def.id,to:L});
+            buzz(); closeSheet();
+          });
+        });
+      });
+      const back=el("button","btn btn-q","Back"); back.onclick=openAdmin; sh.appendChild(back);
+    });
+  }
+
+  function confirmWipe(){
+    openSheet(sh=>{
+      sh.appendChild(el("h2","","Clear all test data?"));
+      const a=el("div","alarm");
+      a.innerHTML="<h3>This can't be undone</h3><p>Every manifest, move, and reconcile is deleted and all safes reset to empty at the warehouse. Your safe list and rooms stay. The Google Sheet keeps its rows — only this board is wiped.</p>";
+      sh.appendChild(a);
+      sh.appendChild(el("p","lede","Export first if you want a copy."));
+      const yes=el("button","btn btn-hot","Delete everything");
+      yes.onclick=()=>{
+        ["safes","transfers","contents","seals","recons","sold","slabmoves","pulled","events"].forEach(n=>{
+          db.ref(DB_PATH+"/"+n).remove();
+        });
+        buzz(); closeSheet();
+      };
+      sh.appendChild(yes);
+      const no=el("button","btn btn-q","Never mind"); no.onclick=openAdmin; sh.appendChild(no);
+    });
+  }
+
+  flushQueue();
+  route();
+})();
+</script>
+</body>
+</html>
